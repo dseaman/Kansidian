@@ -64,6 +64,13 @@ export class ItemIndex {
 		return Array.from(this.items.values());
 	}
 
+	// entries() preserves the TFile reference for each item. Use this in views
+	// to avoid id-based lookups, which mis-resolve when two files share an id
+	// (a Saive-style data issue we must tolerate non-destructively).
+	entries(): Array<[TFile, ParsedItem]> {
+		return Array.from(this.items.entries());
+	}
+
 	byStatus(status: string): ParsedItem[] {
 		return this.all().filter((i) => i.enums.status === status);
 	}

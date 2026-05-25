@@ -10,7 +10,11 @@ interface BoardFilters {
 	milestone: string;
 }
 
-const DRAG_MIME = "application/x-kansidian-item-id";
+type Entry = [TFile, ParsedItem];
+
+// Drag payload: we use the file path (unique per file) rather than the
+// item id (not unique when Saive-style data has duplicate MS-NNN ids).
+const DRAG_MIME = "application/x-kansidian-file-path";
 
 export class KansidianBoardView extends ItemView {
 	private readonly plugin: KansidianPlugin;
@@ -49,16 +53,16 @@ export class KansidianBoardView extends ItemView {
 		root.empty();
 		root.addClass("kansidian-board-root");
 
-		const items = this.plugin.index.all();
-		const filtered = this.applyFilters(items);
+		const entries = this.plugin.index.entries();
+		const filtered = this.applyFilters(entries);
 
 		const header = root.createDiv({ cls: "kansidian-board-header" });
-		header.createEl("h2", { text: `Kansidian board (${filtered.length} of ${items.length})` });
+		header.createEl("h2", { text: `Kansidian board (${filtered.length} of ${entries.length})` });
 
-		this.renderToolbar(root.createDiv({ cls: "kansidian-board-toolbar" }), items);
+		this.renderToolbar(root.createDiv({ cls: "kansidian-board-toolbar" }), entries);
 
 		const columnsContainer = root.createDiv({ cls: "kansidian-board-columns" });
-		const columnNames = this.deriveColumns(filtered);
+		const columnNames = this.deriveColumns(filtered.map(([, i]) => i));
 
 		for (const columnName of columnNames) {
 			this.renderColumn(columnsContainer, columnName, filtered);
@@ -66,20 +70,20 @@ export class KansidianBoardView extends ItemView {
 
 		if (columnNames.length === 0) {
 			columnsContainer.createEl("p", {
-				text: items.length === 0
+				text: entries.length === 0
 					? "No items in the index yet. Check the configured paths in settings."
 					: "No items match the current filters.",
 			});
 		}
 	}
 
-	private applyFilters(items: ParsedItem[]): ParsedItem[] {
+	private applyFilters(entries: Entry[]): Entry[] {
 		const { search, horizon, milestone } = this.filters;
 		const needle = search.trim().toLowerCase();
-		return items.filter((item) => {
+		return entries.filter(([, item]) => {
+			if (item.kind !== "backlog") return false; // board surfaces backlog items only
 			if (horizon && item.enums.horizon !== horizon) return false;
 			if (milestone && item.enums.milestone !== milestone) return false;
-			if (item.kind !== "backlog") return false; // board surfaces backlog items only
 			if (needle) {
 				const haystack = `${item.id} ${item.title}`.toLowerCase();
 				if (!haystack.includes(needle)) return false;
@@ -89,8 +93,6 @@ export class KansidianBoardView extends ItemView {
 	}
 
 	private deriveColumns(items: ParsedItem[]): string[] {
-		// Start with the configured status vocabulary, then add any extras
-		// present in the data so nothing gets hidden.
 		const configured = this.plugin.settings.statusEnums;
 		const inData = new Set<string>();
 		for (const i of items) {
@@ -107,7 +109,7 @@ export class KansidianBoardView extends ItemView {
 		return result;
 	}
 
-	private renderToolbar(toolbar: HTMLElement, items: ParsedItem[]): void {
+	private renderToolbar(toolbar: HTMLElement, entries: Entry[]): void {
 		const searchInput = toolbar.createEl("input", {
 			type: "search",
 			placeholder: "Search id or title…",
@@ -119,6 +121,7 @@ export class KansidianBoardView extends ItemView {
 			this.render();
 		});
 
+		const items = entries.map(([, item]) => item);
 		const uniqueHorizons = sortedUnique(items.map((i) => i.enums.horizon));
 		const uniqueMilestones = sortedUnique(items.map((i) => i.enums.milestone));
 		this.renderFilterSelect(toolbar, "horizon", uniqueHorizons, this.filters.horizon, (v) => {
@@ -148,9 +151,9 @@ export class KansidianBoardView extends ItemView {
 		});
 	}
 
-	private renderColumn(parent: HTMLElement, status: string, items: ParsedItem[]): void {
+	private renderColumn(parent: HTMLElement, status: string, entries: Entry[]): void {
 		const column = parent.createDiv({ cls: "kansidian-board-column" });
-		const inColumn = items.filter((i) => (i.enums.status ?? "") === status);
+		const inColumn = entries.filter(([, i]) => (i.enums.status ?? "") === status);
 
 		const head = column.createDiv({ cls: "kansidian-board-column-head" });
 		head.createEl("span", { text: status, cls: "kansidian-board-column-name" });
@@ -168,21 +171,21 @@ export class KansidianBoardView extends ItemView {
 		column.addEventListener("drop", (event) => {
 			event.preventDefault();
 			column.removeClass("kansidian-board-column-dropping");
-			const id = event.dataTransfer?.getData(DRAG_MIME);
-			if (!id) return;
-			this.moveItemToStatus(id, status);
+			const filePath = event.dataTransfer?.getData(DRAG_MIME);
+			if (!filePath) return;
+			this.moveFileToStatus(filePath, status);
 		});
 
 		const list = column.createDiv({ cls: "kansidian-board-cards" });
-		for (const item of inColumn) {
-			this.renderCard(list, item);
+		for (const [file, item] of inColumn) {
+			this.renderCard(list, file, item);
 		}
 	}
 
-	private renderCard(parent: HTMLElement, item: ParsedItem): void {
+	private renderCard(parent: HTMLElement, file: TFile, item: ParsedItem): void {
 		const card = parent.createDiv({ cls: "kansidian-board-card" });
 		card.draggable = true;
-		card.dataset["id"] = item.id;
+		card.dataset["path"] = file.path;
 
 		card.createDiv({ cls: "kansidian-board-card-id", text: item.id });
 		card.createDiv({ cls: "kansidian-board-card-title", text: item.title });
@@ -202,7 +205,7 @@ export class KansidianBoardView extends ItemView {
 		}
 
 		card.addEventListener("dragstart", (event) => {
-			event.dataTransfer?.setData(DRAG_MIME, item.id);
+			event.dataTransfer?.setData(DRAG_MIME, file.path);
 			if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 			card.addClass("kansidian-board-card-dragging");
 		});
@@ -210,26 +213,17 @@ export class KansidianBoardView extends ItemView {
 			card.removeClass("kansidian-board-card-dragging");
 		});
 		card.addEventListener("click", () => {
-			const file = this.findFile(item.id);
-			if (file) void this.app.workspace.getLeaf("tab").openFile(file);
+			void this.app.workspace.getLeaf("tab").openFile(file);
 		});
 	}
 
-	private moveItemToStatus(itemId: string, targetStatus: string): void {
-		const file = this.findFile(itemId);
-		if (!file) return;
+	private moveFileToStatus(filePath: string, targetStatus: string): void {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) return;
 		const item = this.plugin.index.get(file);
 		if (!item) return;
 		if (item.enums.status === targetStatus) return;
 		void this.plugin.applyEnumChange(file, "Status", targetStatus);
-	}
-
-	private findFile(id: string): TFile | null {
-		for (const f of this.app.vault.getMarkdownFiles()) {
-			const parsed = this.plugin.index.get(f);
-			if (parsed?.id === id) return f;
-		}
-		return null;
 	}
 }
 

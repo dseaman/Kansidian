@@ -13,6 +13,8 @@ interface ListFilters {
 
 type EnumField = "Status" | "Horizon" | "Priority";
 
+type Entry = [TFile, ParsedItem];
+
 export class KansidianListView extends ItemView {
 	private readonly plugin: KansidianPlugin;
 	private unsubscribe?: () => void;
@@ -50,13 +52,13 @@ export class KansidianListView extends ItemView {
 		root.empty();
 		root.addClass("kansidian-list-root");
 
-		const items = this.plugin.index.all();
-		const filtered = this.applyFilters(items);
+		const entries = this.plugin.index.entries();
+		const filtered = this.applyFilters(entries);
 
 		const header = root.createDiv({ cls: "kansidian-list-header" });
-		header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${items.length})` });
+		header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length})` });
 
-		this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), items);
+		this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), entries);
 
 		const table = root.createEl("table", { cls: "kansidian-list-table" });
 		const thead = table.createEl("thead");
@@ -71,22 +73,22 @@ export class KansidianListView extends ItemView {
 			const cell = emptyRow.createEl("td");
 			cell.colSpan = 6;
 			cell.setText(
-				items.length === 0
+				entries.length === 0
 					? "No items in the index yet. Check the configured paths in settings."
 					: "No items match the current filters.",
 			);
 			return;
 		}
 
-		for (const item of filtered) {
-			this.renderRow(tbody, item);
+		for (const [file, item] of filtered) {
+			this.renderRow(tbody, file, item);
 		}
 	}
 
-	private applyFilters(items: ParsedItem[]): ParsedItem[] {
+	private applyFilters(entries: Entry[]): Entry[] {
 		const { search, status, horizon, milestone } = this.filters;
 		const needle = search.trim().toLowerCase();
-		return items.filter((item) => {
+		return entries.filter(([, item]) => {
 			if (status && item.enums.status !== status) return false;
 			if (horizon && item.enums.horizon !== horizon) return false;
 			if (milestone && item.enums.milestone !== milestone) return false;
@@ -98,7 +100,7 @@ export class KansidianListView extends ItemView {
 		});
 	}
 
-	private renderToolbar(toolbar: HTMLElement, items: ParsedItem[]): void {
+	private renderToolbar(toolbar: HTMLElement, entries: Entry[]): void {
 		const searchInput = toolbar.createEl("input", {
 			type: "search",
 			placeholder: "Search id or title…",
@@ -110,6 +112,7 @@ export class KansidianListView extends ItemView {
 			this.render();
 		});
 
+		const items = entries.map(([, item]) => item);
 		const uniqueStatuses = sortedUnique(items.map((i) => i.enums.status));
 		const uniqueHorizons = sortedUnique(items.map((i) => i.enums.horizon));
 		const uniqueMilestones = sortedUnique(items.map((i) => i.enums.milestone));
@@ -144,7 +147,7 @@ export class KansidianListView extends ItemView {
 		});
 	}
 
-	private renderRow(tbody: HTMLElement, item: ParsedItem): void {
+	private renderRow(tbody: HTMLElement, file: TFile, item: ParsedItem): void {
 		const row = tbody.createEl("tr", { cls: "kansidian-list-row" });
 
 		const idCell = row.createEl("td", { text: item.id, cls: "kansidian-list-id" });
@@ -154,12 +157,11 @@ export class KansidianListView extends ItemView {
 		row.createEl("td", { text: item.enums.milestone ?? "", cls: "kansidian-list-milestone" });
 		row.createEl("td", { text: item.raw["scope"] ?? "", cls: "kansidian-list-scope" });
 
-		this.renderEnumCell(statusCell, item, "status", this.plugin.settings.statusEnums);
-		this.renderEnumCell(horizonCell, item, "horizon", this.plugin.settings.horizonEnums);
+		this.renderEnumCell(statusCell, file, item, "status", this.plugin.settings.statusEnums);
+		this.renderEnumCell(horizonCell, file, item, "horizon", this.plugin.settings.horizonEnums);
 
 		const openFile = (): void => {
-			const file = this.findFile(item);
-			if (file) void this.app.workspace.getLeaf("tab").openFile(file);
+			void this.app.workspace.getLeaf("tab").openFile(file);
 		};
 		idCell.addEventListener("click", openFile);
 		titleCell.addEventListener("click", openFile);
@@ -167,6 +169,7 @@ export class KansidianListView extends ItemView {
 
 	private renderEnumCell(
 		cell: HTMLElement,
+		file: TFile,
 		item: ParsedItem,
 		which: "status" | "horizon",
 		vocabulary: string[],
@@ -179,12 +182,13 @@ export class KansidianListView extends ItemView {
 
 		cell.addEventListener("click", (event) => {
 			event.stopPropagation();
-			this.openEnumEditor(cell, item, which, vocabulary, current);
+			this.openEnumEditor(cell, file, item, which, vocabulary, current);
 		});
 	}
 
 	private openEnumEditor(
 		cell: HTMLElement,
+		file: TFile,
 		item: ParsedItem,
 		which: "status" | "horizon",
 		vocabulary: string[],
@@ -214,24 +218,11 @@ export class KansidianListView extends ItemView {
 					: item.raw["horizon"] !== undefined
 						? "Horizon"
 						: "Priority";
-			const file = this.findFile(item);
-			if (!file) {
-				cleanup();
-				return;
-			}
 			void this.plugin.applyEnumChange(file, field, next);
 			// Re-render after the index emits 'changed'.
 		});
 		select.addEventListener("blur", cleanup);
 		select.focus();
-	}
-
-	private findFile(item: ParsedItem): TFile | null {
-		for (const f of this.app.vault.getMarkdownFiles()) {
-			const parsed = this.plugin.index.get(f);
-			if (parsed?.id === item.id) return f;
-		}
-		return null;
 	}
 }
 
