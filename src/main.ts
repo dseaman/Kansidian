@@ -41,6 +41,10 @@ export default class KansidianPlugin extends Plugin {
 
 		this.addSettingTab(new KansidianSettingTab(this.app, this));
 
+		this.addRibbonIcon("kanban-square", "Kansidian board", () => {
+			void this.activateView(KANSIDIAN_BOARD_VIEW_TYPE);
+		});
+
 		this.registerView(
 			KANSIDIAN_BOARD_VIEW_TYPE,
 			(leaf) => new KansidianBoardView(leaf, this),
