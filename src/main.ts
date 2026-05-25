@@ -37,11 +37,11 @@ export default class KansidianPlugin extends Plugin {
 
 		this.registerView(
 			KANSIDIAN_BOARD_VIEW_TYPE,
-			(leaf) => new KansidianBoardView(leaf, this.index),
+			(leaf) => new KansidianBoardView(leaf, this),
 		);
 		this.registerView(
 			KANSIDIAN_LIST_VIEW_TYPE,
-			(leaf) => new KansidianListView(leaf, this.index),
+			(leaf) => new KansidianListView(leaf, this),
 		);
 
 		this.addCommand({
@@ -155,7 +155,7 @@ export default class KansidianPlugin extends Plugin {
 		return true;
 	}
 
-	private async applyEnumChange(file: TFile, field: string, newEnum: string): Promise<void> {
+	async applyEnumChange(file: TFile, field: string, newEnum: string): Promise<void> {
 		const content = await this.app.vault.read(file);
 		const next = updateBoldKeyEnum(content, field, newEnum);
 		if (next === content) return;

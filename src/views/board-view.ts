@@ -1,15 +1,15 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import type { ItemIndex } from "../item-index";
+import type KansidianPlugin from "../main";
 
 export const KANSIDIAN_BOARD_VIEW_TYPE = "kansidian-board";
 
 export class KansidianBoardView extends ItemView {
-	private readonly index: ItemIndex;
+	private readonly plugin: KansidianPlugin;
 	private unsubscribe?: () => void;
 
-	constructor(leaf: WorkspaceLeaf, index: ItemIndex) {
+	constructor(leaf: WorkspaceLeaf, plugin: KansidianPlugin) {
 		super(leaf);
-		this.index = index;
+		this.plugin = plugin;
 	}
 
 	getViewType(): string {
@@ -25,7 +25,7 @@ export class KansidianBoardView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		this.unsubscribe = this.index.subscribe(() => this.render());
+		this.unsubscribe = this.plugin.index.subscribe(() => this.render());
 		this.render();
 	}
 
@@ -38,7 +38,7 @@ export class KansidianBoardView extends ItemView {
 		if (!container) return;
 		container.empty();
 		container.createEl("h2", { text: "Kansidian board" });
-		const items = this.index.all();
+		const items = this.plugin.index.all();
 		container.createEl("p", {
 			text: `Indexed ${items.length} item${items.length === 1 ? "" : "s"}. Board layout arrives in I-006.`,
 		});
