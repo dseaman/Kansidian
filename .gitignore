@@ -20,3 +20,8 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# Obsidian vault config inside Kansidian's own .sweetclaude/ (only present if
+# the maintainer dogfoods Kansidian against this repo). Workspace state shifts
+# per Obsidian session and shouldn't be committed.
+.sweetclaude/.obsidian/
