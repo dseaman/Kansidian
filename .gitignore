@@ -21,7 +21,11 @@ data.json
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 
-# Obsidian vault config inside Kansidian's own .sweetclaude/ (only present if
-# the maintainer dogfoods Kansidian against this repo). Workspace state shifts
-# per Obsidian session and shouldn't be committed.
-.sweetclaude/.obsidian/
+# Maintainer-only project tracking. SweetClaude state, Claude Code harness
+# settings, and Claude Code project instructions stay local — not shipped in
+# the published repo. (Scrubbed from history via git filter-repo; gitignored
+# here so a stray `git add .` can't reintroduce them.)
+.sweetclaude/
+.claude/
+strategy/
+CLAUDE.md
