@@ -1,5 +1,6 @@
 import { Notice, Plugin, TFile, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import {
+	collectScanPaths,
 	DEFAULT_SETTINGS,
 	type KansidianSettings,
 	KansidianSettingTab,
@@ -9,17 +10,16 @@ import { updateBoldKeyEnum } from "./writer";
 import { KANSIDIAN_BOARD_VIEW_TYPE, KansidianBoardView } from "./views/board-view";
 import { KANSIDIAN_LIST_VIEW_TYPE, KansidianListView } from "./views/list-view";
 
-const STATUS_CYCLE = ["open", "in-progress", "done"] as const;
-const HORIZON_CYCLE = ["now", "next", "sooner", "soon", "later", "someday"] as const;
-
 function isMarkdownFile(file: TAbstractFile | null): file is TFile {
 	return file instanceof TFile && file.extension === "md";
 }
 
 function nextInCycle(current: string | undefined, cycle: readonly string[]): string {
+	if (cycle.length === 0) return current ?? "";
 	if (!current) return cycle[0]!;
 	const i = cycle.indexOf(current);
-	return cycle[(i + 1) % cycle.length] ?? cycle[0]!;
+	if (i === -1) return cycle[0]!;
+	return cycle[(i + 1) % cycle.length]!;
 }
 
 export default class KansidianPlugin extends Plugin {
@@ -30,7 +30,7 @@ export default class KansidianPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.index = new ItemIndex(this.app.vault, {
-			scanPaths: this.collectScanPaths(),
+			scanPaths: collectScanPaths(this.settings),
 		});
 
 		this.addSettingTab(new KansidianSettingTab(this.app, this));
@@ -112,20 +112,9 @@ export default class KansidianPlugin extends Plugin {
 		await this.saveData(this.settings);
 		// Settings may have changed scan paths.
 		if (this.index) {
-			this.index.setScanPaths(this.collectScanPaths());
+			this.index.setScanPaths(collectScanPaths(this.settings));
 			void this.index.rebuild();
 		}
-	}
-
-	private collectScanPaths(): string[] {
-		// Default to both the legacy backlog/ path and the current issues/ path,
-		// plus milestones/. Supports the convention drift between Saive's BL-*
-		// layout and the current SweetClaude framework's I-* layout.
-		return [
-			this.settings.backlogPath,
-			this.settings.issuesPath,
-			this.settings.milestonesPath,
-		].filter((p): p is string => typeof p === "string" && p.length > 0);
 	}
 
 	private async activateView(viewType: string): Promise<void> {
@@ -151,7 +140,7 @@ export default class KansidianPlugin extends Plugin {
 		if (which === "status") {
 			if (item.enums.status === undefined) return false;
 			if (checking) return true;
-			const nextEnum = nextInCycle(item.enums.status, STATUS_CYCLE);
+			const nextEnum = nextInCycle(item.enums.status, this.settings.statusEnums);
 			void this.applyEnumChange(file, "Status", nextEnum);
 			return true;
 		}
@@ -159,7 +148,7 @@ export default class KansidianPlugin extends Plugin {
 		// which === "horizon"
 		if (item.enums.horizon === undefined) return false;
 		if (checking) return true;
-		const nextEnum = nextInCycle(item.enums.horizon, HORIZON_CYCLE);
+		const nextEnum = nextInCycle(item.enums.horizon, this.settings.horizonEnums);
 		// Write to whichever field name the file actually uses on disk.
 		const fieldName = item.raw["horizon"] !== undefined ? "Horizon" : "Priority";
 		void this.applyEnumChange(file, fieldName, nextEnum);
