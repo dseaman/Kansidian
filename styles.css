@@ -39,14 +39,19 @@
 	right: 4px;
 	top: 50%;
 	transform: translateY(-50%);
-	width: 20px;
-	height: 20px;
+	width: 22px;
+	height: 22px;
 	padding: 2px;
 	display: none;
 	align-items: center;
 	justify-content: center;
-	color: var(--text-muted);
+	color: var(--text-normal);
+	opacity: 0.55;
 	cursor: pointer;
+}
+
+.kansidian-search-clear:hover {
+	opacity: 1;
 }
 
 .kansidian-search-wrapper input:not(:placeholder-shown) + .kansidian-search-clear {
@@ -54,8 +59,9 @@
 }
 
 .kansidian-search-clear .svg-icon {
-	width: 14px;
-	height: 14px;
+	width: 15px;
+	height: 15px;
+	stroke-width: 2.2;
 }
 
 .kansidian-list-search {
