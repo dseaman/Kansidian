@@ -1,6 +1,6 @@
 # Kansidian
 
-> A non-destructive Kanban view over [SweetClaude](https://github.com/quantmeta-labs/sweetclaude) project work, inside [Obsidian](https://obsidian.md).
+> A non-destructive Kanban view over [SweetClaude](https://github.com/carson-sweet/sweetclaude) project work, inside [Obsidian](https://obsidian.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#status)
@@ -74,14 +74,15 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 ## Installation
 
-### BRAT (recommended)
+### BRAT (planned, not yet enabled)
 
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin from Obsidian's Community Plugins.
-2. In BRAT settings → **Add Beta Plugin**, paste:
-   ```
-   https://github.com/dseaman/Kansidian
-   ```
-3. After install, go to **Community plugins** and toggle **Kansidian (SweetClaude Kanban)** on.
+The repo is currently private, so BRAT can't fetch releases. Once it goes public, the BRAT path will be:
+
+1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins.
+2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kansidian`.
+3. Enable **Kansidian (SweetClaude Kanban)** in Community Plugins.
+
+Until then, use manual install below.
 
 ### Manual install
 
@@ -193,7 +194,7 @@ A kanban-square icon appears in Obsidian's left ribbon. Click to open the board 
 Open **Settings → Community plugins → Kansidian** to configure:
 
 | Setting | Default | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | Backlog path | `product/backlog` | Vault-relative dir scanned for legacy `BL-*` files. Leave blank to disable. |
 | Issues path | `product/issues` | Vault-relative dir scanned for current `I-*` files. Leave blank to disable. |
 | Milestones path | `product/milestones` | Vault-relative dir scanned for `MS-*` files. |
@@ -207,7 +208,7 @@ All three path fields can be cleared if you don't have that artifact type. Path 
 Kansidian reads the `mode` field from your vault's `state/phase.yaml` and adapts:
 
 | Mode | Behavior |
-|---|---|
+| --- | --- |
 | `kanban` | Renders normally (the default fit). |
 | `agile` | Renders normally. (Sprint-aware filtering is on the roadmap.) |
 | `agile_enterprise` | Renders normally. |
@@ -234,7 +235,7 @@ SweetClaude artifact files lead with a bold-key metadata block:
 **Depends on:** I-001, I-002
 ```
 
-When Kansidian writes a change (e.g. cycling status from `in_progress` → `done`), it uses a surgical splice: only the leading enum portion of the targeted `**Field:**` line changes. Everything else — the H1, other bold-key lines, the body, and any annotation after the enum (parentheticals, em-dashes, or `- ` separators) — is preserved byte-identical.
+When Kansidian writes a change (e.g. cycling status from `in_progress` → `done`), it uses a surgical splice: only the leading enum portion of the targeted `**Field:**` line changes. Everything else — the H1, other bold-key lines, the body, and any annotation after the enum (parentheticals, em-dashes, or `-`  separators) — is preserved byte-identical.
 
 The parser and writer are pure TypeScript modules with no Obsidian dependencies, covered by 33 vitest cases including round-trip byte-identity assertions against fixtures drawn from real corpus variation.
 
@@ -342,4 +343,4 @@ Before submitting a PR, please:
 
 ## License
 
-[MIT](./LICENSE) — Dan Seaman, 2026.
+[MIT](./LICENSE) — Dan Seaman, 2026. 
