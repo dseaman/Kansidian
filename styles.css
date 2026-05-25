@@ -46,12 +46,12 @@
 	align-items: center;
 	justify-content: center;
 	color: var(--text-normal);
-	opacity: 0.55;
 	cursor: pointer;
+	border-radius: 4px;
 }
 
 .kansidian-search-clear:hover {
-	opacity: 1;
+	background-color: var(--background-modifier-hover);
 }
 
 .kansidian-search-wrapper input:not(:placeholder-shown) + .kansidian-search-clear {
@@ -59,9 +59,10 @@
 }
 
 .kansidian-search-clear .svg-icon {
-	width: 15px;
-	height: 15px;
-	stroke-width: 2.2;
+	color: var(--text-normal);
+	width: 16px;
+	height: 16px;
+	stroke-width: 2.5;
 }
 
 .kansidian-list-search {

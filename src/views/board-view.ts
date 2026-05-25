@@ -186,7 +186,7 @@ export class KansidianBoardView extends ItemView {
 			this.render();
 		});
 		const clearBtn = searchWrapper.createEl("div", {
-			cls: "kansidian-search-clear clickable-icon",
+			cls: "kansidian-search-clear",
 			attr: { role: "button", tabindex: "0", "aria-label": "Clear search" },
 		});
 		setIcon(clearBtn, "x");
