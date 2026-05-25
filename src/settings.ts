@@ -2,12 +2,17 @@ import { App, PluginSettingTab } from "obsidian";
 import type KansidianPlugin from "./main";
 
 export interface KansidianSettings {
+	// Paths are vault-relative. Both backlog and issues are scanned to support
+	// the convention drift between Saive's BL-* layout and the current
+	// SweetClaude framework's I-* layout. Either may be empty to disable.
 	backlogPath: string;
+	issuesPath: string;
 	milestonesPath: string;
 }
 
 export const DEFAULT_SETTINGS: KansidianSettings = {
 	backlogPath: "product/backlog",
+	issuesPath: "product/issues",
 	milestonesPath: "product/milestones",
 };
 
