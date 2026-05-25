@@ -220,3 +220,25 @@
 .kansidian-board-card-milestone {
 	font-family: var(--font-monospace);
 }
+
+@keyframes kansidian-board-card-just-moved {
+	0% {
+		background: var(--interactive-accent, var(--text-accent));
+		color: var(--text-on-accent, var(--text-normal));
+		border-color: var(--interactive-accent, var(--text-accent));
+		box-shadow: 0 0 0 3px var(--interactive-accent, var(--text-accent));
+	}
+	60% {
+		box-shadow: 0 0 0 0 var(--interactive-accent, var(--text-accent));
+	}
+	100% {
+		background: var(--background-primary);
+		color: var(--text-normal);
+		border-color: var(--background-modifier-border);
+		box-shadow: 0 0 0 0 transparent;
+	}
+}
+
+.kansidian-board-card-just-moved {
+	animation: kansidian-board-card-just-moved 900ms ease-out;
+}

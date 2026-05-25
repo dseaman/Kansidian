@@ -16,10 +16,20 @@ type Entry = [TFile, ParsedItem];
 // item id (not unique when Saive-style data has duplicate MS-NNN ids).
 const DRAG_MIME = "application/x-kansidian-file-path";
 
+// Highlight window (ms) after a drag-drop during which the destination card
+// gets the "just moved" CSS class. Slightly larger than the flash animation
+// so the highlight survives re-renders triggered by the same change event.
+const JUST_MOVED_WINDOW_MS = 1200;
+
+// FLIP transition duration (ms) for cards animating from old to new position.
+const FLIP_DURATION_MS = 280;
+
 export class KansidianBoardView extends ItemView {
 	private readonly plugin: KansidianPlugin;
 	private unsubscribe?: () => void;
 	private filters: BoardFilters = { search: "", horizon: "", milestone: "" };
+	private recentlyMovedPath: string | null = null;
+	private recentlyMovedAt = 0;
 
 	constructor(leaf: WorkspaceLeaf, plugin: KansidianPlugin) {
 		super(leaf);
@@ -50,6 +60,12 @@ export class KansidianBoardView extends ItemView {
 	private render(): void {
 		const root = this.containerEl.children[1];
 		if (!root) return;
+
+		// Capture pre-render state for FLIP and scroll preservation.
+		const previousColumnsContainer = root.querySelector<HTMLElement>(".kansidian-board-columns");
+		const savedScrollLeft = previousColumnsContainer?.scrollLeft ?? 0;
+		const previousCardRects = this.snapshotCardRects(root);
+
 		root.empty();
 		root.addClass("kansidian-board-root");
 
@@ -75,6 +91,45 @@ export class KansidianBoardView extends ItemView {
 					: "No items match the current filters.",
 			});
 		}
+
+		// Restore horizontal scroll so a re-render doesn't bounce the viewport.
+		columnsContainer.scrollLeft = savedScrollLeft;
+
+		// Run FLIP after layout settles so getBoundingClientRect is accurate.
+		if (previousCardRects.size > 0) {
+			window.requestAnimationFrame(() => this.playFlip(previousCardRects, root));
+		}
+	}
+
+	private snapshotCardRects(root: Element): Map<string, DOMRect> {
+		const rects = new Map<string, DOMRect>();
+		root.querySelectorAll<HTMLElement>(".kansidian-board-card").forEach((el) => {
+			const path = el.dataset["path"];
+			if (path) rects.set(path, el.getBoundingClientRect());
+		});
+		return rects;
+	}
+
+	private playFlip(previous: Map<string, DOMRect>, root: Element): void {
+		root.querySelectorAll<HTMLElement>(".kansidian-board-card").forEach((card) => {
+			const path = card.dataset["path"];
+			if (!path) return;
+			const before = previous.get(path);
+			if (!before) return;
+			const after = card.getBoundingClientRect();
+			const dx = before.left - after.left;
+			const dy = before.top - after.top;
+			if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+			// Web Animations API — no inline style mutation; the animation
+			// runs once and leaves the card's resting style untouched.
+			card.animate(
+				[
+					{ transform: `translate(${dx}px, ${dy}px)` },
+					{ transform: "translate(0, 0)" },
+				],
+				{ duration: FLIP_DURATION_MS, easing: "ease", fill: "none" },
+			);
+		});
 	}
 
 	private applyFilters(entries: Entry[]): Entry[] {
@@ -187,6 +242,13 @@ export class KansidianBoardView extends ItemView {
 		card.draggable = true;
 		card.dataset["path"] = file.path;
 
+		if (
+			file.path === this.recentlyMovedPath &&
+			Date.now() - this.recentlyMovedAt < JUST_MOVED_WINDOW_MS
+		) {
+			card.addClass("kansidian-board-card-just-moved");
+		}
+
 		card.createDiv({ cls: "kansidian-board-card-id", text: item.id });
 		card.createDiv({ cls: "kansidian-board-card-title", text: item.title });
 
@@ -223,6 +285,10 @@ export class KansidianBoardView extends ItemView {
 		const item = this.plugin.index.get(file);
 		if (!item) return;
 		if (item.enums.status === targetStatus) return;
+		// Mark this card for the destination-highlight flash before the change
+		// kicks off the index → render cycle.
+		this.recentlyMovedPath = filePath;
+		this.recentlyMovedAt = Date.now();
 		void this.plugin.applyEnumChange(file, "Status", targetStatus);
 	}
 }
