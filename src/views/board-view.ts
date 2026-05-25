@@ -1,4 +1,4 @@
-import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, setIcon, TFile, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 import { captureFocus, restoreFocus } from "./preserve-focus";
@@ -185,16 +185,23 @@ export class KansidianBoardView extends ItemView {
 			this.filters.search = searchInput.value;
 			this.render();
 		});
-		const clearBtn = searchWrapper.createEl("button", {
-			cls: "kansidian-search-clear",
-			text: "✕",
-			attr: { type: "button", "aria-label": "Clear search" },
+		const clearBtn = searchWrapper.createEl("div", {
+			cls: "kansidian-search-clear clickable-icon",
+			attr: { role: "button", tabindex: "0", "aria-label": "Clear search" },
 		});
-		clearBtn.addEventListener("click", () => {
+		setIcon(clearBtn, "x");
+		const clear = (): void => {
 			this.filters.search = "";
 			this.render();
 			const refocus = this.containerEl.querySelector<HTMLInputElement>(".kansidian-board-search");
 			refocus?.focus();
+		};
+		clearBtn.addEventListener("click", clear);
+		clearBtn.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" || event.key === " ") {
+				event.preventDefault();
+				clear();
+			}
 		});
 
 		const items = entries.map(([, item]) => item);
