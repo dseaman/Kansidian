@@ -311,23 +311,17 @@ Then enable Kansidian in that vault and reload Obsidian (or toggle the plugin of
 
 ## Roadmap
 
-Tracked under `.sweetclaude/product/issues/`. Highlights:
-
-- **Distribution readiness** — public GitHub release, BRAT install verification, community plugin store submission.
+- **Distribution readiness** — community plugin store submission.
 - **Sprint-aware filtering** for agile mode.
 - **Epic / theme classification filters.**
 - **Pitch-board view** for Shape Up projects.
 - **Item creation from Obsidian** — pending a compatibility audit of `/sweetclaude:project-issues new`.
 
-See `.sweetclaude/technical/architecture.md` for full design context and ADRs.
+Issue tracking lives in the maintainer's private workspace; expect roadmap items to surface here as releases land.
 
 ## Contributing
 
-Issues, PRs, and feedback welcome.
-
-- **Architecture & ADRs:** `.sweetclaude/technical/architecture.md`
-- **Open work items:** `.sweetclaude/product/issues/ISSUES-INDEX.md`
-- **Project state model:** `.sweetclaude/state/` (read-only — managed by SweetClaude)
+Issues, PRs, and feedback welcome via this repo's GitHub Issues.
 
 Before submitting a PR, please:
 
