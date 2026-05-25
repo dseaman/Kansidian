@@ -1,6 +1,9 @@
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
+import { captureFocus, restoreFocus } from "./preserve-focus";
+
+const FOCUSABLE_SELECTORS = [".kansidian-board-search"];
 
 export const KANSIDIAN_BOARD_VIEW_TYPE = "kansidian-board";
 
@@ -61,43 +64,49 @@ export class KansidianBoardView extends ItemView {
 		const root = this.containerEl.children[1];
 		if (!root) return;
 
+		const focusSnapshot = captureFocus(this.containerEl, FOCUSABLE_SELECTORS);
+
 		// Capture pre-render state for FLIP and scroll preservation.
 		const previousColumnsContainer = root.querySelector<HTMLElement>(".kansidian-board-columns");
 		const savedScrollLeft = previousColumnsContainer?.scrollLeft ?? 0;
 		const previousCardRects = this.snapshotCardRects(root);
 
-		root.empty();
-		root.addClass("kansidian-board-root");
+		try {
+			root.empty();
+			root.addClass("kansidian-board-root");
 
-		const entries = this.plugin.index.entries();
-		const filtered = this.applyFilters(entries);
+			const entries = this.plugin.index.entries();
+			const filtered = this.applyFilters(entries);
 
-		const header = root.createDiv({ cls: "kansidian-board-header" });
-		header.createEl("h2", { text: `Kansidian board (${filtered.length} of ${entries.length})` });
+			const header = root.createDiv({ cls: "kansidian-board-header" });
+			header.createEl("h2", { text: `Kansidian board (${filtered.length} of ${entries.length})` });
 
-		this.renderToolbar(root.createDiv({ cls: "kansidian-board-toolbar" }), entries);
+			this.renderToolbar(root.createDiv({ cls: "kansidian-board-toolbar" }), entries);
 
-		const columnsContainer = root.createDiv({ cls: "kansidian-board-columns" });
-		const columnNames = this.deriveColumns(filtered.map(([, i]) => i));
+			const columnsContainer = root.createDiv({ cls: "kansidian-board-columns" });
+			const columnNames = this.deriveColumns(filtered.map(([, i]) => i));
 
-		for (const columnName of columnNames) {
-			this.renderColumn(columnsContainer, columnName, filtered);
-		}
+			for (const columnName of columnNames) {
+				this.renderColumn(columnsContainer, columnName, filtered);
+			}
 
-		if (columnNames.length === 0) {
-			columnsContainer.createEl("p", {
-				text: entries.length === 0
-					? "No items in the index yet. Check the configured paths in settings."
-					: "No items match the current filters.",
-			});
-		}
+			if (columnNames.length === 0) {
+				columnsContainer.createEl("p", {
+					text: entries.length === 0
+						? "No items in the index yet. Check the configured paths in settings."
+						: "No items match the current filters.",
+				});
+			}
 
-		// Restore horizontal scroll so a re-render doesn't bounce the viewport.
-		columnsContainer.scrollLeft = savedScrollLeft;
+			// Restore horizontal scroll so a re-render doesn't bounce the viewport.
+			columnsContainer.scrollLeft = savedScrollLeft;
 
-		// Run FLIP after layout settles so getBoundingClientRect is accurate.
-		if (previousCardRects.size > 0) {
-			window.requestAnimationFrame(() => this.playFlip(previousCardRects, root));
+			// Run FLIP after layout settles so getBoundingClientRect is accurate.
+			if (previousCardRects.size > 0) {
+				window.requestAnimationFrame(() => this.playFlip(previousCardRects, root));
+			}
+		} finally {
+			restoreFocus(this.containerEl, focusSnapshot);
 		}
 	}
 

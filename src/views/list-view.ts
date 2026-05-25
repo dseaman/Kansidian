@@ -1,6 +1,9 @@
 import { ItemView, Menu, TFile, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
+import { captureFocus, restoreFocus } from "./preserve-focus";
+
+const FOCUSABLE_SELECTORS = [".kansidian-list-search"];
 
 export const KANSIDIAN_LIST_VIEW_TYPE = "kansidian-list";
 
@@ -49,39 +52,44 @@ export class KansidianListView extends ItemView {
 	private render(): void {
 		const root = this.containerEl.children[1];
 		if (!root) return;
-		root.empty();
-		root.addClass("kansidian-list-root");
+		const focusSnapshot = captureFocus(this.containerEl, FOCUSABLE_SELECTORS);
+		try {
+			root.empty();
+			root.addClass("kansidian-list-root");
 
-		const entries = this.plugin.index.entries();
-		const filtered = this.applyFilters(entries);
+			const entries = this.plugin.index.entries();
+			const filtered = this.applyFilters(entries);
 
-		const header = root.createDiv({ cls: "kansidian-list-header" });
-		header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length})` });
+			const header = root.createDiv({ cls: "kansidian-list-header" });
+			header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length})` });
 
-		this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), entries);
+			this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), entries);
 
-		const table = root.createEl("table", { cls: "kansidian-list-table" });
-		const thead = table.createEl("thead");
-		const headerRow = thead.createEl("tr");
-		for (const label of ["id", "title", "status", "horizon", "milestone", "scope"]) {
-			headerRow.createEl("th", { text: label });
-		}
+			const table = root.createEl("table", { cls: "kansidian-list-table" });
+			const thead = table.createEl("thead");
+			const headerRow = thead.createEl("tr");
+			for (const label of ["id", "title", "status", "horizon", "milestone", "scope"]) {
+				headerRow.createEl("th", { text: label });
+			}
 
-		const tbody = table.createEl("tbody");
-		if (filtered.length === 0) {
-			const emptyRow = tbody.createEl("tr");
-			const cell = emptyRow.createEl("td");
-			cell.colSpan = 6;
-			cell.setText(
-				entries.length === 0
-					? "No items in the index yet. Check the configured paths in settings."
-					: "No items match the current filters.",
-			);
-			return;
-		}
+			const tbody = table.createEl("tbody");
+			if (filtered.length === 0) {
+				const emptyRow = tbody.createEl("tr");
+				const cell = emptyRow.createEl("td");
+				cell.colSpan = 6;
+				cell.setText(
+					entries.length === 0
+						? "No items in the index yet. Check the configured paths in settings."
+						: "No items match the current filters.",
+				);
+				return;
+			}
 
-		for (const [file, item] of filtered) {
-			this.renderRow(tbody, file, item);
+			for (const [file, item] of filtered) {
+				this.renderRow(tbody, file, item);
+			}
+		} finally {
+			restoreFocus(this.containerEl, focusSnapshot);
 		}
 	}
 
