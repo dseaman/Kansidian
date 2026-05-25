@@ -11,46 +11,6 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 ---
 
-## Table of contents
-
-- [Status](#status)
-- [Features](#features)
-- [Compatibility](#compatibility)
-- [Installation](#installation)
-  - [BRAT (recommended)](#brat-recommended)
-  - [Manual install](#manual-install)
-- [Vault setup](#vault-setup)
-  - [Why open `.sweetclaude/` and not the project root](#why-open-sweetclaude-and-not-the-project-root)
-  - [Picking the hidden folder](#picking-the-hidden-folder)
-- [Quick start](#quick-start)
-- [Usage reference](#usage-reference)
-  - [Board view](#board-view)
-  - [List view](#list-view)
-  - [Search and filters](#search-and-filters)
-  - [Drag and drop](#drag-and-drop)
-  - [Inline enum picker](#inline-enum-picker)
-  - [Cycle commands](#cycle-commands)
-  - [Ribbon icon](#ribbon-icon)
-  - [Rescan command](#rescan-command)
-- [Settings reference](#settings-reference)
-- [Project mode support](#project-mode-support)
-- [How it works](#how-it-works)
-  - [Bold-key contract preservation](#bold-key-contract-preservation)
-  - [SweetClaude cache staleness](#sweetclaude-cache-staleness)
-- [Known limitations](#known-limitations)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
-
----
-
-## Status
-
-**Pre-alpha.** Core flows are tested against a real-world vault (~135 items), but the plugin has not yet been submitted to the Obsidian community plugin store. Install via BRAT or manual sideload until then.
-
 ## Features
 
 - **Board view (kanban).** Columns by status, cards by work item, native HTML5 drag-and-drop between columns. Cards show ID, title, milestone, and a horizon chip.
@@ -73,10 +33,6 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 - **SweetClaude:** any project with `MS-*` milestone files and either `I-*` or `BL-*` work items. Tested against the framework's 3.68.6 release with a vault containing both conventions.
 
 ## Installation
-
-### BRAT (planned, not yet enabled)
-
-The repo is currently private, so BRAT can't fetch releases. Once it goes public, the BRAT path will be:
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins.
 2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kansidian`.
