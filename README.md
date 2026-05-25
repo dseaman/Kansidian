@@ -2,9 +2,13 @@
 
 > **Status:** PRE-ALPHA — scaffolding only. The plugin does not do anything useful yet.
 
-An Obsidian plugin that gives [SweetClaude](https://github.com/quantmeta-labs/sweetclaude) users a non-destructive Kanban view of their project backlog and milestones.
+An Obsidian plugin that gives [SweetClaude](https://github.com/quantmeta-labs/sweetclaude) users a non-destructive Kanban view of their project's work items and milestones.
 
-Kansidian reads SweetClaude's native bold-key markdown directly. It surfaces backlog items and milestones in board and list views, lets you drag to cycle status or reassign milestones, and writes changes back to the same files with annotations preserved byte-identical. SweetClaude in Claude Code remains the primary working interface — Kansidian is a visibility layer alongside it.
+Kansidian reads SweetClaude's native bold-key markdown directly. It surfaces issues (`I-*`) and milestones (`MS-*`) in board and list views, lets you drag to cycle status or reassign milestones, and writes changes back to the same files with annotations preserved byte-identical. SweetClaude in Claude Code remains the primary working interface — Kansidian is a visibility layer alongside it.
+
+**Best fit:** SweetClaude projects in `kanban` or `agile` mode (where work is tracked as `I-*` issues). Also supports the legacy `BL-*` convention some projects use (Saive-style backlog items with `Horizon` / `Priority` fields).
+
+**Not yet supported:** Shape Up mode (no backlog by design — work enters via pitches), Flow mode (work is inferred, nothing to render), epics / themes / sprints / roadmap items / releases / pitches / cycles as first-class views (these are SweetClaude artifact types Kansidian's MVP doesn't render).
 
 ## How it works (vault model)
 
