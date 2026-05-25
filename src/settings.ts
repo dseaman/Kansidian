@@ -1,36 +1,29 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
+import { App, PluginSettingTab } from "obsidian";
+import type KansidianPlugin from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface KansidianSettings {
+	backlogPath: string;
+	milestonesPath: string;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+export const DEFAULT_SETTINGS: KansidianSettings = {
+	backlogPath: "product/backlog",
+	milestonesPath: "product/milestones",
+};
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+export class KansidianSettingTab extends PluginSettingTab {
+	plugin: KansidianPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: KansidianPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
-
+		const { containerEl } = this;
 		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		containerEl.createEl("p", {
+			text: "Kansidian is in pre-alpha scaffolding. Real settings arrive with a later issue.",
+		});
 	}
 }

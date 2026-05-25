@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"id": "kansidian",
+	"name": "Kansidian (SweetClaude Kanban)",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Non-destructive Kanban view over SweetClaude project backlog and milestones. Read, reprioritize, and move items between milestones without touching SweetClaude's native markdown format.",
+	"author": "Dan Seaman",
+	"authorUrl": "https://github.com/dseaman/Kansidian",
 	"isDesktopOnly": false
 }

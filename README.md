@@ -1,90 +1,64 @@
-# Obsidian Sample Plugin
+# Kansidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+> **Status:** PRE-ALPHA — scaffolding only. The plugin does not do anything useful yet.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+An Obsidian plugin that gives [SweetClaude](https://github.com/quantmeta-labs/sweetclaude) users a non-destructive Kanban view of their project backlog and milestones.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+Kansidian reads SweetClaude's native bold-key markdown directly. It surfaces backlog items and milestones in board and list views, lets you drag to cycle status or reassign milestones, and writes changes back to the same files with annotations preserved byte-identical. SweetClaude in Claude Code remains the primary working interface — Kansidian is a visibility layer alongside it.
 
-## First time developing plugins?
+## How it works (vault model)
 
-Quick starting guide for new plugin devs:
+Kansidian assumes you open your project's `.sweetclaude/` directory itself as the Obsidian vault — not the project root. This sidesteps Obsidian's default behaviour of skipping dotfiles and dotdirs. The vault root becomes `.sweetclaude/`; `product/backlog/`, `product/milestones/`, `state/`, etc. are regular directories from Obsidian's perspective.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```text
+your-project/
+├── src/                          # your code (not in the vault)
+└── .sweetclaude/                 # ← open THIS as your Obsidian vault
+    ├── product/
+    │   ├── backlog/   *.md       # ← Kansidian renders these as cards
+    │   └── milestones/ *.md      # ← and these as columns / linkable targets
+    └── state/
 ```
 
-If you have multiple URLs, you can also do:
+If you want to navigate your project code as well, open a second Obsidian window with your project root as that vault.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+## Install (BRAT)
+
+Kansidian is not yet in the Obsidian community plugin store. For now, install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
+
+1. Install BRAT from Community Plugins.
+2. In BRAT settings → **Add Beta Plugin**, paste: `https://github.com/dseaman/Kansidian`.
+3. Enable **Kansidian (SweetClaude Kanban)** in Community Plugins.
+4. Open your project's `.sweetclaude/` directory as the active Obsidian vault.
+5. Command palette → **Open Kansidian board** (or **Open Kansidian list**).
+
+## Develop
+
+```bash
+npm install
+npm run dev    # esbuild watch — emits main.js at repo root
+npm run build  # tsc -noEmit + esbuild production
+npm run lint   # ESLint with eslint-plugin-obsidianmd
 ```
 
-## API Documentation
+To test against your own SweetClaude vault while iterating, symlink the built plugin into the target vault's `.obsidian/plugins/kansidian/`:
 
-See https://docs.obsidian.md
+```bash
+mkdir -p /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian
+ln -sf "$PWD/main.js" /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian/main.js
+ln -sf "$PWD/manifest.json" /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian/manifest.json
+ln -sf "$PWD/styles.css" /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian/styles.css
+```
+
+## Design
+
+See [`.sweetclaude/technical/architecture.md`](./.sweetclaude/technical/architecture.md) for the architecture and Architectural Decision Records. The load-bearing decisions:
+
+- **Bold-key splice with annotation preservation** (ADR-002) — writes never overwrite annotations like `done (merged 2026-05-19, PR #29)`
+- **Vault-as-`.sweetclaude/`** (ADR-010) — sidesteps Obsidian's dotdir limitation
+- **MVP scope = backlog items + milestones only** (ADR-007) — epics, sprints, stories deferred
+- **No item creation in MVP** (ADR-011) — deferred to post-MVP gated on compatibility audit
+
+## License
+
+[MIT](./LICENSE) — Dan Seaman, 2026.
