@@ -2,6 +2,7 @@ import { ItemView, Menu, setIcon, TFile, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 import { captureFocus, restoreFocus } from "./preserve-focus";
+import { modeBadge, renderModePlaceholder, shouldShowPlaceholder } from "./mode-placeholder";
 
 const FOCUSABLE_SELECTORS = [".kansidian-list-search"];
 
@@ -57,11 +58,17 @@ export class KansidianListView extends ItemView {
 			root.empty();
 			root.addClass("kansidian-list-root");
 
+			const mode = this.plugin.mode;
+			if (shouldShowPlaceholder(mode)) {
+				renderModePlaceholder(root, mode);
+				return;
+			}
+
 			const entries = this.plugin.index.entries();
 			const filtered = this.applyFilters(entries);
 
 			const header = root.createDiv({ cls: "kansidian-list-header" });
-			header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length})` });
+			header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
 
 			this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), entries);
 

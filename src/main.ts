@@ -1,4 +1,9 @@
 import { Notice, Plugin, TFile, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+
+export type ProjectMode = "flow" | "kanban" | "shape_up" | "agile" | "agile_enterprise" | "unset";
+
+const KNOWN_MODES: ProjectMode[] = ["flow", "kanban", "shape_up", "agile", "agile_enterprise"];
+const PHASE_YAML_PATH = "state/phase.yaml";
 import {
 	collectScanPaths,
 	DEFAULT_SETTINGS,
@@ -25,6 +30,7 @@ function nextInCycle(current: string | undefined, cycle: readonly string[]): str
 export default class KansidianPlugin extends Plugin {
 	settings!: KansidianSettings;
 	index!: ItemIndex;
+	mode: ProjectMode = "unset";
 
 	async onload() {
 		await this.loadSettings();
@@ -95,7 +101,15 @@ export default class KansidianPlugin extends Plugin {
 		// Initial scan happens after layout is ready so vault is fully populated.
 		this.app.workspace.onLayoutReady(() => {
 			void this.index.rebuild();
+			void this.refreshMode();
 		});
+
+		// Re-read mode when phase.yaml changes.
+		this.registerEvent(
+			this.app.vault.on("modify", (file) => {
+				if (file.path === PHASE_YAML_PATH) void this.refreshMode();
+			}),
+		);
 
 		console.debug("Kansidian: loaded");
 	}
@@ -158,6 +172,23 @@ export default class KansidianPlugin extends Plugin {
 		const fieldName = item.raw["horizon"] !== undefined ? "Horizon" : "Priority";
 		void this.applyEnumChange(file, fieldName, nextEnum);
 		return true;
+	}
+
+	async refreshMode(): Promise<void> {
+		const previous = this.mode;
+		const file = this.app.vault.getAbstractFileByPath(PHASE_YAML_PATH);
+		if (!(file instanceof TFile)) {
+			this.mode = "unset";
+		} else {
+			const content = await this.app.vault.read(file);
+			const match = content.match(/^mode:\s*([a-z_]+)\s*$/m);
+			const parsed = match?.[1] as ProjectMode | undefined;
+			this.mode = parsed && KNOWN_MODES.includes(parsed) ? parsed : "unset";
+		}
+		if (this.mode !== previous) {
+			// Notify subscribers (views) so they re-render with the new mode.
+			this.index.notifyChange();
+		}
 	}
 
 	private async rescanAndHint(): Promise<void> {

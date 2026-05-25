@@ -60,6 +60,13 @@ export class ItemIndex {
 		return () => this.listeners.delete(listener);
 	}
 
+	// Manually trigger a noop change so subscribers re-render. Used when
+	// something outside the index changes that affects view output (e.g. the
+	// project's mode setting).
+	notifyChange(): void {
+		this.emit({ kind: "noop" });
+	}
+
 	all(): ParsedItem[] {
 		return Array.from(this.items.values());
 	}
