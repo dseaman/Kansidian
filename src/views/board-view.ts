@@ -174,7 +174,8 @@ export class KansidianBoardView extends ItemView {
 	}
 
 	private renderToolbar(toolbar: HTMLElement, entries: Entry[]): void {
-		const searchInput = toolbar.createEl("input", {
+		const searchWrapper = toolbar.createDiv({ cls: "kansidian-search-wrapper" });
+		const searchInput = searchWrapper.createEl("input", {
 			type: "search",
 			placeholder: "Search id or title…",
 			cls: "kansidian-board-search",
@@ -183,6 +184,17 @@ export class KansidianBoardView extends ItemView {
 		searchInput.addEventListener("input", () => {
 			this.filters.search = searchInput.value;
 			this.render();
+		});
+		const clearBtn = searchWrapper.createEl("button", {
+			cls: "kansidian-search-clear",
+			text: "✕",
+			attr: { type: "button", "aria-label": "Clear search" },
+		});
+		clearBtn.addEventListener("click", () => {
+			this.filters.search = "";
+			this.render();
+			const refocus = this.containerEl.querySelector<HTMLInputElement>(".kansidian-board-search");
+			refocus?.focus();
 		});
 
 		const items = entries.map(([, item]) => item);

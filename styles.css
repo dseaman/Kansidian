@@ -21,10 +21,45 @@
 	margin-bottom: 10px;
 }
 
-.kansidian-list-search {
+.kansidian-search-wrapper {
+	position: relative;
 	flex: 1 1 200px;
 	min-width: 160px;
-	padding: 4px 8px;
+	display: flex;
+	align-items: center;
+}
+
+.kansidian-search-wrapper input {
+	width: 100%;
+	padding: 4px 28px 4px 8px;
+}
+
+.kansidian-search-clear {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 2px 6px;
+	line-height: 1;
+	font-size: 13px;
+	display: none;
+	box-shadow: none;
+}
+
+.kansidian-search-wrapper input:not(:placeholder-shown) + .kansidian-search-clear {
+	display: block;
+}
+
+.kansidian-search-clear:hover {
+	color: var(--text-normal);
+}
+
+.kansidian-list-search {
+	/* layout handled by .kansidian-search-wrapper */
 }
 
 .kansidian-list-filter {
@@ -109,9 +144,7 @@
 }
 
 .kansidian-board-search {
-	flex: 1 1 200px;
-	min-width: 160px;
-	padding: 4px 8px;
+	/* layout handled by .kansidian-search-wrapper */
 }
 
 .kansidian-board-filter {
