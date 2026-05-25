@@ -1,4 +1,4 @@
-import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, Menu, TFile, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 
@@ -178,51 +178,45 @@ export class KansidianListView extends ItemView {
 		cell.empty();
 		cell.setText(current);
 
-		if (!vocabulary.includes(current) && vocabulary.length === 0) return;
+		if (vocabulary.length === 0) return;
 
 		cell.addEventListener("click", (event) => {
 			event.stopPropagation();
-			this.openEnumEditor(cell, file, item, which, vocabulary, current);
+			this.openEnumMenu(event, file, item, which, vocabulary, current);
 		});
 	}
 
-	private openEnumEditor(
-		cell: HTMLElement,
+	private openEnumMenu(
+		event: MouseEvent,
 		file: TFile,
 		item: ParsedItem,
 		which: "status" | "horizon",
 		vocabulary: string[],
 		current: string,
 	): void {
-		cell.empty();
-		const select = cell.createEl("select", { cls: "kansidian-list-enum-editor" });
+		const menu = new Menu();
+		// Show the current value first if it isn't in the configured vocabulary,
+		// so the user can see what the file actually has.
 		const choices = vocabulary.includes(current) ? vocabulary : [current, ...vocabulary];
+
 		for (const opt of choices) {
-			const el = select.createEl("option", { text: opt, value: opt });
-			if (opt === current) el.selected = true;
+			menu.addItem((menuItem) => {
+				menuItem.setTitle(opt);
+				if (opt === current) menuItem.setIcon("checkmark");
+				menuItem.onClick(() => {
+					if (opt === current) return;
+					const field: EnumField =
+						which === "status"
+							? "Status"
+							: item.raw["horizon"] !== undefined
+								? "Horizon"
+								: "Priority";
+					void this.plugin.applyEnumChange(file, field, opt);
+				});
+			});
 		}
 
-		const cleanup = (): void => {
-			cell.empty();
-			cell.setText(item.enums[which] ?? "");
-		};
-		select.addEventListener("change", () => {
-			const next = select.value;
-			if (next === current) {
-				cleanup();
-				return;
-			}
-			const field: EnumField =
-				which === "status"
-					? "Status"
-					: item.raw["horizon"] !== undefined
-						? "Horizon"
-						: "Priority";
-			void this.plugin.applyEnumChange(file, field, next);
-			// Re-render after the index emits 'changed'.
-		});
-		select.addEventListener("blur", cleanup);
-		select.focus();
+		menu.showAtMouseEvent(event);
 	}
 }
 
