@@ -22,6 +22,18 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		// Tests run in Node via vitest, so Node builtins are legitimate here.
+		files: ["tests/**/*.ts"],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+		rules: {
+			"import/no-nodejs-modules": "off",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",

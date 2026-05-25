@@ -1,0 +1,129 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { parseSweetClaudeFile } from "../src/parser";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const fixturesDir = join(here, "fixtures");
+const fixture = (name: string): string =>
+	readFileSync(join(fixturesDir, name), "utf-8");
+
+describe("parseSweetClaudeFile — structure", () => {
+	it("parses an I-prefix issue with Priority convention", () => {
+		const item = parseSweetClaudeFile(fixture("I-001-clean-enums.md"));
+		expect(item).not.toBeNull();
+		expect(item!.id).toBe("I-001");
+		expect(item!.kind).toBe("backlog");
+		expect(item!.title).toBe("Plugin scaffold and repo hygiene");
+		expect(item!.raw["milestone"]).toBe("MS-001");
+		expect(item!.raw["type"]).toBe("chore");
+		expect(item!.enums.status).toBe("in-progress");
+		expect(item!.enums.horizon).toBe("next"); // Priority normalises to enums.horizon
+		expect(item!.enums.milestone).toBe("MS-001");
+		expect(item!.enums.dependsOn).toEqual([]);
+	});
+
+	it("parses a BL-prefix issue with Horizon convention", () => {
+		const item = parseSweetClaudeFile(fixture("BL-042-parenthetical-annotation.md"));
+		expect(item).not.toBeNull();
+		expect(item!.id).toBe("BL-042");
+		expect(item!.kind).toBe("backlog");
+		expect(item!.title).toBe("Wire analytics ingest");
+		expect(item!.enums.horizon).toBe("next");
+	});
+
+	it("parses an MS-prefix milestone file as kind 'milestone'", () => {
+		const item = parseSweetClaudeFile(fixture("MS-003-milestone.md"));
+		expect(item).not.toBeNull();
+		expect(item!.id).toBe("MS-003");
+		expect(item!.kind).toBe("milestone");
+		expect(item!.title).toBe("Pilot launch");
+		expect(item!.enums.status).toBe("active");
+	});
+
+	it("returns null for a file with no bold-key block", () => {
+		expect(parseSweetClaudeFile(fixture("garbage-no-bold-keys.md"))).toBeNull();
+	});
+
+	it("returns null for a file with no H1", () => {
+		expect(parseSweetClaudeFile(fixture("garbage-no-h1.md"))).toBeNull();
+	});
+});
+
+describe("parseSweetClaudeFile — enum extraction with annotations", () => {
+	it("extracts the leading status enum from a parenthetical annotation", () => {
+		const item = parseSweetClaudeFile(fixture("BL-042-parenthetical-annotation.md"))!;
+		expect(item.enums.status).toBe("done");
+		// raw value preserves the full annotated string
+		expect(item.raw["status"]).toBe("done (merged 2026-05-19, PR #29)");
+	});
+
+	it("extracts the leading status enum from an em-dash annotation", () => {
+		const item = parseSweetClaudeFile(fixture("BL-099-em-dash-annotation.md"))!;
+		expect(item.enums.status).toBe("deferred");
+		expect(item.raw["status"]).toBe("deferred — blocked on BL-039 quota meter");
+	});
+
+	it("extracts horizon enum from annotated horizon value", () => {
+		const item = parseSweetClaudeFile(fixture("BL-099-em-dash-annotation.md"))!;
+		expect(item.enums.horizon).toBe("later");
+		expect(item.raw["horizon"]).toBe("later (Phase B)");
+	});
+});
+
+describe("parseSweetClaudeFile — normalisation", () => {
+	it("normalises legacy in_progress to in-progress", () => {
+		const item = parseSweetClaudeFile(fixture("BL-077-underscore-status.md"))!;
+		expect(item.enums.status).toBe("in-progress");
+		// raw is preserved verbatim
+		expect(item.raw["status"]).toBe("in_progress");
+	});
+
+	it("canonicalises milestone value with slug suffix to MS-NNN", () => {
+		const item = parseSweetClaudeFile(fixture("BL-021-milestone-with-slug.md"))!;
+		expect(item.enums.milestone).toBe("MS-002");
+		expect(item.raw["milestone"]).toBe("MS-002-browser-extension-mvp");
+	});
+});
+
+describe("parseSweetClaudeFile — dependsOn", () => {
+	it("parses a comma-separated dependsOn list", () => {
+		const item = parseSweetClaudeFile(fixture("BL-042-parenthetical-annotation.md"))!;
+		expect(item.enums.dependsOn).toEqual(["BL-040", "BL-041"]);
+	});
+
+	it("treats (none) as empty array", () => {
+		const item = parseSweetClaudeFile(fixture("I-001-clean-enums.md"))!;
+		expect(item.enums.dependsOn).toEqual([]);
+	});
+
+	it("treats missing Depends on field as empty array", () => {
+		const item = parseSweetClaudeFile(fixture("BL-077-underscore-status.md"))!;
+		expect(item.enums.dependsOn).toEqual([]);
+	});
+});
+
+describe("parseSweetClaudeFile — dual Horizon/Priority convention", () => {
+	it("treats **Horizon:** and **Priority:** as the same conceptual field", () => {
+		const horizonFile = parseSweetClaudeFile(fixture("BL-042-parenthetical-annotation.md"))!;
+		const priorityFile = parseSweetClaudeFile(fixture("I-001-clean-enums.md"))!;
+		expect(horizonFile.enums.horizon).toBe("next");
+		expect(priorityFile.enums.horizon).toBe("next");
+		// raw preserves which key was actually used on disk
+		expect(horizonFile.raw["horizon"]).toBe("next");
+		expect(horizonFile.raw["priority"]).toBeUndefined();
+		expect(priorityFile.raw["priority"]).toBe("next");
+		expect(priorityFile.raw["horizon"]).toBeUndefined();
+	});
+});
+
+describe("round-trip parse → readback", () => {
+	it("every fixture either parses cleanly or returns null without throwing", () => {
+		const files = readdirSync(fixturesDir).filter((n) => n.endsWith(".md"));
+		expect(files.length).toBeGreaterThan(0);
+		for (const f of files) {
+			expect(() => parseSweetClaudeFile(fixture(f))).not.toThrow();
+		}
+	});
+});
