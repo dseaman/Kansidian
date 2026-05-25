@@ -64,6 +64,11 @@ export default class KansidianPlugin extends Plugin {
 			name: "Cycle horizon forward",
 			checkCallback: (checking) => this.cycleActiveFile(checking, "horizon"),
 		});
+		this.addCommand({
+			id: "rescan-and-hint",
+			name: "Rescan vault and show cache hint",
+			callback: () => void this.rescanAndHint(),
+		});
 
 		// Wire vault events. Use registerEvent so unload cleans listeners up.
 		this.registerEvent(
@@ -153,6 +158,14 @@ export default class KansidianPlugin extends Plugin {
 		const fieldName = item.raw["horizon"] !== undefined ? "Horizon" : "Priority";
 		void this.applyEnumChange(file, fieldName, nextEnum);
 		return true;
+	}
+
+	private async rescanAndHint(): Promise<void> {
+		await this.index.rebuild();
+		new Notice(
+			"Kansidian index rebuilt. SweetClaude's cached session-status.txt does not refresh on Obsidian-driven writes — run /sweetclaude:status in Claude Code (or edit a watched state file) to refresh it.",
+			8000,
+		);
 	}
 
 	async applyEnumChange(file: TFile, field: string, newEnum: string): Promise<void> {

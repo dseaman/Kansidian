@@ -50,6 +50,21 @@ ln -sf "$PWD/manifest.json" /path/to/your-project/.sweetclaude/.obsidian/plugins
 ln -sf "$PWD/styles.css" /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian/styles.css
 ```
 
+## Known: SweetClaude cache staleness after Obsidian-driven writes
+
+SweetClaude regenerates its cached `.sweetclaude/state/session-status.txt` via a Claude Code `PostToolUse` hook that fires after Claude Code's own `Write`/`Edit` tool calls. Obsidian's `vault.modify` writes do not go through Claude Code, so the hook does not fire, and the cache goes stale until something else triggers regeneration.
+
+Practical impact: after using Kansidian to drag cards or cycle enums, your project's cached `session-status.txt` shows pre-edit data. Slash commands that recompute from disk (`/sweetclaude:status`) are unaffected — they show live truth. Slash commands or memory tools that read the cached file will show stale data.
+
+Refresh options:
+- Run `/sweetclaude:status` in Claude Code — recomputes from disk (doesn't write the cache, but you see fresh state).
+- Edit any file in the framework's watched set (e.g. add a noop line to `state/checkpoint.md`) — triggers the regenerator.
+- Start a new Claude Code session — preflight regenerates.
+
+Kansidian's own in-memory index stays in sync with the vault via Obsidian's file-watcher events. The staleness is exclusive to SweetClaude's framework caches, not Kansidian's.
+
+The command palette entry **Kansidian: Rescan vault and show cache hint** rebuilds Kansidian's index and shows a Notice with the refresh paths above.
+
 ## Design
 
 See [`.sweetclaude/technical/architecture.md`](./.sweetclaude/technical/architecture.md) for the architecture and Architectural Decision Records. The load-bearing decisions:
