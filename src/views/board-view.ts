@@ -169,11 +169,8 @@ export class KansidianBoardView extends ItemView {
 		for (const i of items) {
 			if (i.enums.status) inData.add(i.enums.status);
 		}
-		const result: string[] = [];
-		for (const s of configured) {
-			if (inData.has(s) || items.length === 0) result.push(s);
-			inData.delete(s);
-		}
+		const result: string[] = [...configured];
+		for (const s of configured) inData.delete(s);
 		for (const extra of Array.from(inData).sort()) {
 			result.push(extra);
 		}
