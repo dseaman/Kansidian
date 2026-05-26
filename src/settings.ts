@@ -52,16 +52,14 @@ export class KansidianSettingTab extends PluginSettingTab {
 		const mode = this.plugin.vaultMode;
 		const intro = containerEl.createEl("p");
 		if (mode === "legacy") {
-			intro.appendText("Vault layout detected: ");
-			intro.createEl("strong", { text: ".sweetclaude/-as-vault" });
-			intro.appendText(" (legacy). Paths below are vault-relative.");
+			intro.appendText("Vault layout: the vault root is ");
+			intro.createEl("code", { text: ".sweetclaude/" });
+			intro.appendText(" itself (legacy mode). Paths below are vault-relative.");
 		} else if (mode === "project-root") {
-			intro.appendText("Vault layout detected: ");
-			intro.createEl("strong", { text: "project-root" });
-			intro.appendText(". Kandyban reads ");
+			intro.appendText("Vault layout: project root, with ");
 			intro.createEl("code", { text: ".sweetclaude/" });
 			intro.appendText(
-				" via vault.adapter (Obsidian's indexer skips dotdirs). Paths below are relative to ",
+				" as a child dir. Kandyban reads it via vault.adapter (Obsidian's indexer skips dotdirs). Paths below are relative to ",
 			);
 			intro.createEl("code", { text: ".sweetclaude/" });
 			intro.appendText(".");
