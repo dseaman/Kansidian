@@ -1,9 +1,11 @@
-// In-memory index of parsed SweetClaude items. Owned by the plugin; rebuilt
-// from disk on every load. Subscribers re-render when an item's enums actually
-// change — pure-file mutations that don't shift enums emit `noop`.
+// In-memory index of parsed SweetClaude items. Keys are logical (Kansidian-
+// relative) path strings — NOT Obsidian TFile references — so the same index
+// works whether the vault is `.sweetclaude/` (legacy) or the project root
+// (project-root mode, where many .sweetclaude/* files have no TFile because
+// Obsidian's indexer skips dotdirs).
 
-import type { TFile, Vault } from "obsidian";
 import { parseSweetClaudeFile, type ParsedItem } from "./parser";
+import type { FileAccess } from "./file-access";
 
 export type IndexChange =
 	| { kind: "added"; id: string }
@@ -14,30 +16,17 @@ export type IndexChange =
 export type IndexListener = (change: IndexChange) => void;
 
 export interface ItemIndexOptions {
-	scanPaths: string[]; // vault-relative dirs, e.g. ["product/backlog", "product/issues", "product/milestones"]
-}
-
-function isMarkdown(path: string): boolean {
-	return path.toLowerCase().endsWith(".md");
-}
-
-function startsWithAny(path: string, prefixes: string[]): boolean {
-	const normalised = path.replace(/^\/+/, "");
-	for (const p of prefixes) {
-		const prefix = p.replace(/\/+$/, "");
-		if (normalised === prefix || normalised.startsWith(`${prefix}/`)) return true;
-	}
-	return false;
+	scanPaths: string[]; // logical (Kansidian-relative) dirs
 }
 
 export class ItemIndex {
-	private readonly items = new Map<TFile, ParsedItem>();
+	private readonly items = new Map<string, ParsedItem>(); // key: logical path
 	private readonly listeners = new Set<IndexListener>();
-	private readonly vault: Vault;
+	private readonly access: FileAccess;
 	private scanPaths: string[];
 
-	constructor(vault: Vault, options: ItemIndexOptions) {
-		this.vault = vault;
+	constructor(access: FileAccess, options: ItemIndexOptions) {
+		this.access = access;
 		this.scanPaths = options.scanPaths;
 	}
 
@@ -47,10 +36,9 @@ export class ItemIndex {
 
 	async rebuild(): Promise<void> {
 		this.items.clear();
-		const files = this.vault.getMarkdownFiles();
-		for (const file of files) {
-			if (!startsWithAny(file.path, this.scanPaths)) continue;
-			await this.indexFile(file, { silent: true });
+		const paths = await this.access.listMarkdownUnder(this.scanPaths);
+		for (const p of paths) {
+			await this.indexPath(p, { silent: true });
 		}
 		this.emit({ kind: "noop" });
 	}
@@ -60,9 +48,6 @@ export class ItemIndex {
 		return () => this.listeners.delete(listener);
 	}
 
-	// Manually trigger a noop change so subscribers re-render. Used when
-	// something outside the index changes that affects view output (e.g. the
-	// project's mode setting).
 	notifyChange(): void {
 		this.emit({ kind: "noop" });
 	}
@@ -71,10 +56,7 @@ export class ItemIndex {
 		return Array.from(this.items.values());
 	}
 
-	// entries() preserves the TFile reference for each item. Use this in views
-	// to avoid id-based lookups, which mis-resolve when two files share an id
-	// (a Saive-style data issue we must tolerate non-destructively).
-	entries(): Array<[TFile, ParsedItem]> {
+	entries(): Array<[string, ParsedItem]> {
 		return Array.from(this.items.entries());
 	}
 
@@ -86,62 +68,76 @@ export class ItemIndex {
 		return this.all().filter((i) => i.enums.milestone === milestoneId);
 	}
 
-	get(file: TFile): ParsedItem | undefined {
-		return this.items.get(file);
+	get(logicalPath: string): ParsedItem | undefined {
+		return this.items.get(logicalPath);
 	}
 
-	async onFileModified(file: TFile): Promise<void> {
-		if (!this.tracks(file)) return;
-		const previous = this.items.get(file);
-		await this.indexFile(file, { silent: false, previous });
+	// Vault-event handlers. Caller already filtered for tracked paths.
+	async onPathModified(logicalPath: string): Promise<void> {
+		if (!this.tracks(logicalPath)) return;
+		const previous = this.items.get(logicalPath);
+		await this.indexPath(logicalPath, { silent: false, previous });
 	}
 
-	async onFileCreated(file: TFile): Promise<void> {
-		if (!this.tracks(file)) return;
-		await this.indexFile(file, { silent: false });
+	async onPathCreated(logicalPath: string): Promise<void> {
+		if (!this.tracks(logicalPath)) return;
+		await this.indexPath(logicalPath, { silent: false });
 	}
 
-	onFileDeleted(file: TFile): void {
-		const existing = this.items.get(file);
+	onPathDeleted(logicalPath: string): void {
+		const existing = this.items.get(logicalPath);
 		if (!existing) return;
-		this.items.delete(file);
+		this.items.delete(logicalPath);
 		this.emit({ kind: "removed", id: existing.id });
 	}
 
-	async onFileRenamed(file: TFile, oldPath: string): Promise<void> {
-		// Drop any entry that was keyed by the old TFile reference.
-		// Vault may reuse the TFile or hand us a fresh one — defensive cleanup.
-		for (const [key, item] of this.items) {
-			if (key.path === oldPath) {
-				this.items.delete(key);
-				this.emit({ kind: "removed", id: item.id });
-				break;
-			}
+	async onPathRenamed(newLogicalPath: string, oldLogicalPath: string): Promise<void> {
+		const existing = this.items.get(oldLogicalPath);
+		if (existing) {
+			this.items.delete(oldLogicalPath);
+			this.emit({ kind: "removed", id: existing.id });
 		}
-		if (!this.tracks(file)) return;
-		await this.indexFile(file, { silent: false });
+		if (!this.tracks(newLogicalPath)) return;
+		await this.indexPath(newLogicalPath, { silent: false });
 	}
 
-	private tracks(file: TFile): boolean {
-		return isMarkdown(file.path) && startsWithAny(file.path, this.scanPaths);
+	private tracks(logicalPath: string): boolean {
+		if (!logicalPath.toLowerCase().endsWith(".md")) return false;
+		const normalised = logicalPath.replace(/^\/+/, "");
+		for (const r of this.scanPaths) {
+			const root = r.replace(/\/+$/, "");
+			if (!root) continue;
+			if (normalised === root || normalised.startsWith(`${root}/`)) return true;
+		}
+		return false;
 	}
 
-	private async indexFile(
-		file: TFile,
+	private async indexPath(
+		logicalPath: string,
 		opts: { silent: boolean; previous?: ParsedItem },
 	): Promise<void> {
-		const content = await this.vault.read(file);
+		let content: string;
+		try {
+			content = await this.access.read(logicalPath);
+		} catch {
+			// File may have just been deleted between list and read.
+			if (opts.previous) {
+				this.items.delete(logicalPath);
+				if (!opts.silent) this.emit({ kind: "removed", id: opts.previous.id });
+			}
+			return;
+		}
 		const parsed = parseSweetClaudeFile(content);
 
 		if (!parsed) {
 			if (opts.previous) {
-				this.items.delete(file);
+				this.items.delete(logicalPath);
 				if (!opts.silent) this.emit({ kind: "removed", id: opts.previous.id });
 			}
 			return;
 		}
 
-		this.items.set(file, parsed);
+		this.items.set(logicalPath, parsed);
 		if (opts.silent) return;
 
 		if (!opts.previous) {

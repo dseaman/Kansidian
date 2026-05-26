@@ -43,48 +43,54 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 ### Manual install
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub release](https://github.com/dseaman/Kansidian/releases).
-2. Create `<your-project>/.sweetclaude/.obsidian/plugins/kansidian/`.
+2. Create the plugin folder inside whichever vault you'll use:
+   - Option A (project root as vault): `<your-project>/.obsidian/plugins/kansidian/`
+   - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kansidian/`
 3. Drop the three files into that folder.
-4. In Obsidian (with `.sweetclaude/` open as a vault — see [Vault setup](#vault-setup)), enable Kansidian in **Community plugins**.
+4. In Obsidian, enable Kansidian in **Community plugins**.
+
+See [Vault setup](#vault-setup) for the difference between the two layouts.
 
 ## Vault setup
 
-Kansidian assumes you open your project's `.sweetclaude/` directory itself as the Obsidian vault, **not** the project root.
+Kansidian supports two vault layouts and auto-detects which one you're using. Pick whichever fits your workflow:
+
+### Option A — open your project root as the vault (recommended for multi-project setups)
 
 ```text
-your-project/
-├── src/                          # your code (not in the vault)
-├── package.json                  # not in the vault
-└── .sweetclaude/                 # ← open THIS as your Obsidian vault
-    ├── product/
-    │   ├── backlog/   *.md       # ← rendered as cards (legacy BL-* convention)
-    │   ├── issues/    *.md       # ← rendered as cards (current I-* convention)
-    │   └── milestones/ *.md      # ← rendered as columns / linkable targets
-    ├── state/
-    │   └── phase.yaml            # ← Kansidian reads `mode` from here
+your-project/                     # ← open THIS as your Obsidian vault
+├── src/                          # your code (visible in the file explorer)
+├── package.json                  # also visible
+└── .sweetclaude/                 # Kansidian finds and reads this via vault.adapter
+    ├── product/{backlog,issues,milestones}/
+    ├── state/phase.yaml
     └── …
 ```
 
-### Why open `.sweetclaude/` and not the project root
+Each project gets a distinct vault name (your project's directory name) — solves the "all my vaults show as `sweetclaude`" problem. Trade-off: Obsidian's indexer skips dotdirs, so `.sweetclaude/*` files don't have `TFile` references. Kansidian uses `vault.adapter` (low-level filesystem access) for everything it needs internally, so board / list / drag / edit all work — but **click-to-open** a card falls back to the system handler (your OS default markdown app) instead of opening in an Obsidian editor pane.
 
-Obsidian's vault indexer skips dotfiles and dotdirs by default. If you opened your project root as the vault, `.sweetclaude/` would be invisible to Obsidian and Kansidian would have nothing to read.
+To get full Obsidian integration in Option A, install a community plugin that makes the indexer include dotdirs (search community plugins for "Show Hidden Files" or "Show Dotfiles"). With one installed, `.sweetclaude/*` becomes regular indexed files and click-to-open lands in Obsidian. Kansidian detects this at load and adapts.
 
-Opening `.sweetclaude/` itself makes its contents first-class vault content. The trade-off: Obsidian's file explorer shows only your SweetClaude artifacts, not your project's code. If you want code navigation too, run a second Obsidian window with your project root as that vault.
+### Option B — open `.sweetclaude/` itself as the vault (original mode)
 
-### Picking the hidden folder
-
-macOS Finder hides dotfolders by default, including in Obsidian's "Open folder as vault" dialog. To reveal `.sweetclaude/` in the picker:
-
-- **macOS:** press `⌘` + `Shift` + `.` (period) inside the file dialog. Hidden folders appear; pick `.sweetclaude/`.
-- **Windows / Linux:** TBD — verify and PR.
-
-If the keyboard trick is too friction, create a non-hidden symlink in your project root:
-
-```bash
-ln -sf .sweetclaude my-sweetclaude-vault
+```text
+your-project/.sweetclaude/        # ← open THIS as your Obsidian vault
+├── product/{backlog,issues,milestones}/
+├── state/phase.yaml
+└── …
 ```
 
-Then open `my-sweetclaude-vault` as the vault. Add `my-sweetclaude-vault` to your project's `.gitignore` if you don't want to share the symlink.
+Click-to-open works natively. Trade-off: every project's vault root is `.sweetclaude/`, so multi-project setups all show the same vault name in Obsidian's switcher. ALSO: don't use Obsidian's "Rename vault" — it moves the directory on disk and breaks SweetClaude's hardcoded paths.
+
+To pick the hidden `.sweetclaude/` folder in the vault picker:
+
+- **macOS:** press `⌘` + `Shift` + `.` (period) inside the file dialog.
+- **Windows / Linux:** TBD — verify and PR.
+- Or symlink for a friendlier name: `ln -sf .sweetclaude my-project-vault` then pick `my-project-vault`.
+
+### Which layout is Kansidian using right now?
+
+The view headers show your detected layout — e.g. `Kansidian board (134 of 134) · kanban`. Kansidian's `Rescan vault and show cache hint` command also surfaces the current mode in its Notice.
 
 ## Quick start
 

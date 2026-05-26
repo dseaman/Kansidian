@@ -1,4 +1,4 @@
-import { ItemView, setIcon, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, setIcon, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 import { captureFocus, restoreFocus } from "./preserve-focus";
@@ -14,10 +14,10 @@ interface BoardFilters {
 	milestone: string;
 }
 
-type Entry = [TFile, ParsedItem];
+type Entry = [string, ParsedItem]; // [logicalPath, item]
 
-// Drag payload: we use the file path (unique per file) rather than the
-// item id (not unique when Saive-style data has duplicate MS-NNN ids).
+// Drag payload: we use the logical file path (unique per file) rather than
+// the item id (not unique when data has duplicate MS-NNN ids).
 const DRAG_MIME = "application/x-kansidian-file-path";
 
 // Highlight window (ms) after a drag-drop during which the destination card
@@ -267,18 +267,18 @@ export class KansidianBoardView extends ItemView {
 		});
 
 		const list = column.createDiv({ cls: "kansidian-board-cards" });
-		for (const [file, item] of inColumn) {
-			this.renderCard(list, file, item);
+		for (const [logicalPath, item] of inColumn) {
+			this.renderCard(list, logicalPath, item);
 		}
 	}
 
-	private renderCard(parent: HTMLElement, file: TFile, item: ParsedItem): void {
+	private renderCard(parent: HTMLElement, logicalPath: string, item: ParsedItem): void {
 		const card = parent.createDiv({ cls: "kansidian-board-card" });
 		card.draggable = true;
-		card.dataset["path"] = file.path;
+		card.dataset["path"] = logicalPath;
 
 		if (
-			file.path === this.recentlyMovedPath &&
+			logicalPath === this.recentlyMovedPath &&
 			Date.now() - this.recentlyMovedAt < JUST_MOVED_WINDOW_MS
 		) {
 			card.addClass("kansidian-board-card-just-moved");
@@ -302,7 +302,7 @@ export class KansidianBoardView extends ItemView {
 		}
 
 		card.addEventListener("dragstart", (event) => {
-			event.dataTransfer?.setData(DRAG_MIME, file.path);
+			event.dataTransfer?.setData(DRAG_MIME, logicalPath);
 			if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 			card.addClass("kansidian-board-card-dragging");
 		});
@@ -310,21 +310,19 @@ export class KansidianBoardView extends ItemView {
 			card.removeClass("kansidian-board-card-dragging");
 		});
 		card.addEventListener("click", () => {
-			void this.app.workspace.getLeaf("tab").openFile(file);
+			void this.plugin.openLogical(logicalPath);
 		});
 	}
 
-	private moveFileToStatus(filePath: string, targetStatus: string): void {
-		const file = this.app.vault.getAbstractFileByPath(filePath);
-		if (!(file instanceof TFile)) return;
-		const item = this.plugin.index.get(file);
+	private moveFileToStatus(logicalPath: string, targetStatus: string): void {
+		const item = this.plugin.index.get(logicalPath);
 		if (!item) return;
 		if (item.enums.status === targetStatus) return;
 		// Mark this card for the destination-highlight flash before the change
 		// kicks off the index → render cycle.
-		this.recentlyMovedPath = filePath;
+		this.recentlyMovedPath = logicalPath;
 		this.recentlyMovedAt = Date.now();
-		void this.plugin.applyEnumChange(file, "Status", targetStatus);
+		void this.plugin.applyEnumChange(logicalPath, "Status", targetStatus);
 	}
 }
 

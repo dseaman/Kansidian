@@ -1,9 +1,10 @@
-import { Notice, Plugin, TFile, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
-
-export type ProjectMode = "flow" | "kanban" | "shape_up" | "agile" | "agile_enterprise" | "unset";
-
-const KNOWN_MODES: ProjectMode[] = ["flow", "kanban", "shape_up", "agile", "agile_enterprise"];
-const PHASE_YAML_PATH = "state/phase.yaml";
+import {
+	Notice,
+	Plugin,
+	TFile,
+	type TAbstractFile,
+	type WorkspaceLeaf,
+} from "obsidian";
 import {
 	collectScanPaths,
 	DEFAULT_SETTINGS,
@@ -12,10 +13,25 @@ import {
 } from "./settings";
 import { ItemIndex } from "./item-index";
 import { updateBoldKeyEnum } from "./writer";
+import {
+	detectMode,
+	type FileAccess,
+	ProjectRootAccess,
+	VaultAccess,
+} from "./file-access";
 import { KANSIDIAN_BOARD_VIEW_TYPE, KansidianBoardView } from "./views/board-view";
 import { KANSIDIAN_LIST_VIEW_TYPE, KansidianListView } from "./views/list-view";
 
-function isMarkdownFile(file: TAbstractFile | null): file is TFile {
+export type ProjectMode = "flow" | "kanban" | "shape_up" | "agile" | "agile_enterprise" | "unset";
+
+const KNOWN_MODES: ProjectMode[] = ["flow", "kanban", "shape_up", "agile", "agile_enterprise"];
+
+// Plugin IDs we recognize as providing dotdir indexing. If any of these is
+// enabled, project-root-mode click-to-open into Obsidian's editor works
+// natively. Otherwise we fall back to the system handler.
+const KNOWN_HIDDEN_FILES_PLUGINS = ["show-hidden-files", "obsidian-show-dotfiles"];
+
+function isMarkdownTAbstractFile(file: TAbstractFile | null): file is TFile {
 	return file instanceof TFile && file.extension === "md";
 }
 
@@ -31,11 +47,29 @@ export default class KansidianPlugin extends Plugin {
 	settings!: KansidianSettings;
 	index!: ItemIndex;
 	mode: ProjectMode = "unset";
+	vaultMode: "legacy" | "project-root" | "no-project" = "no-project";
+	private access!: FileAccess;
+	private hiddenPluginNoticeShown = false;
 
 	async onload() {
 		await this.loadSettings();
 
-		this.index = new ItemIndex(this.app.vault, {
+		// Detect which vault layout we're in before anything else.
+		const detected = await detectMode(this.app.vault);
+		if (detected === "legacy") {
+			this.vaultMode = "legacy";
+			this.access = new VaultAccess(this.app.vault);
+		} else if (detected === "project-root") {
+			this.vaultMode = "project-root";
+			this.access = new ProjectRootAccess(this.app.vault);
+		} else {
+			this.vaultMode = "no-project";
+			// Default to legacy access so list/board can render the empty-state
+			// placeholder without crashing.
+			this.access = new VaultAccess(this.app.vault);
+		}
+
+		this.index = new ItemIndex(this.access, {
 			scanPaths: collectScanPaths(this.settings),
 		});
 
@@ -80,46 +114,61 @@ export default class KansidianPlugin extends Plugin {
 			callback: () => void this.rescanAndHint(),
 		});
 
-		// Wire vault events. Use registerEvent so unload cleans listeners up.
+		// Vault events. In legacy mode, fires for all tracked files. In
+		// project-root mode, only fires for tracked files that Obsidian has
+		// indexed (i.e. with a hidden-files plugin installed). Either way the
+		// adapter side keeps working.
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
-				if (isMarkdownFile(file)) void this.index.onFileModified(file);
+				const logical = this.vaultPathToLogical(file.path);
+				if (logical && isMarkdownTAbstractFile(file)) {
+					void this.index.onPathModified(logical);
+				}
 			}),
 		);
 		this.registerEvent(
 			this.app.vault.on("create", (file) => {
-				if (isMarkdownFile(file)) void this.index.onFileCreated(file);
+				const logical = this.vaultPathToLogical(file.path);
+				if (logical && isMarkdownTAbstractFile(file)) {
+					void this.index.onPathCreated(logical);
+				}
 			}),
 		);
 		this.registerEvent(
 			this.app.vault.on("delete", (file) => {
-				if (isMarkdownFile(file)) this.index.onFileDeleted(file);
+				const logical = this.vaultPathToLogical(file.path);
+				if (logical) this.index.onPathDeleted(logical);
 			}),
 		);
 		this.registerEvent(
 			this.app.vault.on("rename", (file, oldPath) => {
-				if (isMarkdownFile(file)) void this.index.onFileRenamed(file, oldPath);
+				const newLogical = this.vaultPathToLogical(file.path);
+				const oldLogical = this.vaultPathToLogical(oldPath);
+				if (newLogical && oldLogical) {
+					void this.index.onPathRenamed(newLogical, oldLogical);
+				}
 			}),
 		);
 
-		// Initial scan happens after layout is ready so vault is fully populated.
+		// Watch phase.yaml for mode changes (regardless of vault layout).
+		this.registerEvent(
+			this.app.vault.on("modify", (file) => {
+				if (this.vaultPathToLogical(file.path) === "state/phase.yaml") {
+					void this.refreshMode();
+				}
+			}),
+		);
+
 		this.app.workspace.onLayoutReady(() => {
 			void this.index.rebuild();
 			void this.refreshMode();
+			this.maybeNudgeHiddenFilesPlugin();
 		});
 
-		// Re-read mode when phase.yaml changes.
-		this.registerEvent(
-			this.app.vault.on("modify", (file) => {
-				if (file.path === PHASE_YAML_PATH) void this.refreshMode();
-			}),
-		);
-
-		console.debug("Kansidian: loaded");
+		console.debug(`Kansidian: loaded (vaultMode=${this.vaultMode})`);
 	}
 
 	onunload() {
-		// View leaves are detached by Obsidian via registerView lifecycle.
 		console.debug("Kansidian: unloaded");
 	}
 
@@ -133,11 +182,125 @@ export default class KansidianPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-		// Settings may have changed scan paths.
 		if (this.index) {
 			this.index.setScanPaths(collectScanPaths(this.settings));
 			void this.index.rebuild();
 		}
+	}
+
+	async refreshMode(): Promise<void> {
+		const previous = this.mode;
+		try {
+			const content = await this.access.read("state/phase.yaml");
+			const match = content.match(/^mode:\s*([a-z_]+)\s*$/m);
+			const parsed = match?.[1] as ProjectMode | undefined;
+			this.mode = parsed && KNOWN_MODES.includes(parsed) ? parsed : "unset";
+		} catch {
+			this.mode = "unset";
+		}
+		if (this.mode !== previous) this.index.notifyChange();
+	}
+
+	private async rescanAndHint(): Promise<void> {
+		await this.index.rebuild();
+		const modeNote =
+			this.vaultMode === "project-root"
+				? " (project-root mode reads via vault.adapter — external edits don't fire vault events; rescan after Claude Code sessions if needed.)"
+				: "";
+		new Notice(
+			`Kansidian index rebuilt.${modeNote} SweetClaude's cached session-status.txt does not refresh on Obsidian-driven writes — run /sweetclaude:status in Claude Code (or edit a watched state file) to refresh it.`,
+			10000,
+		);
+	}
+
+	// Translate an Obsidian vault path (e.g. ".sweetclaude/product/backlog/BL-001.md"
+	// in project-root mode, or "product/backlog/BL-001.md" in legacy mode) into
+	// the Kansidian-logical path that the index uses as a key. Returns null if
+	// the path isn't part of Kansidian's scope.
+	vaultPathToLogical(vaultPath: string): string | null {
+		if (this.vaultMode === "project-root") {
+			const prefix = ".sweetclaude/";
+			if (vaultPath === ".sweetclaude" || vaultPath.startsWith(prefix)) {
+				return vaultPath.startsWith(prefix) ? vaultPath.slice(prefix.length) : "";
+			}
+			return null;
+		}
+		return vaultPath;
+	}
+
+	// Reverse of vaultPathToLogical. Used by view openFile helpers.
+	logicalToVaultPath(logical: string): string {
+		return this.access.vaultPath(logical);
+	}
+
+	async openLogical(logical: string): Promise<void> {
+		const tfile = this.access.getTFile(logical);
+		if (tfile) {
+			await this.app.workspace.getLeaf("tab").openFile(tfile);
+			return;
+		}
+		// Fallback: hand off to the OS for files Obsidian can't open (no TFile
+		// because no hidden-files plugin in project-root mode).
+		const vaultPath = this.access.vaultPath(logical);
+		try {
+			// Obsidian provides this via the app object; works on desktop only.
+			const adapter = this.app.vault.adapter as unknown as {
+				getFullPath?: (path: string) => string;
+			};
+			const fullPath = adapter.getFullPath?.(vaultPath);
+			if (fullPath) {
+				// Electron's shell.openPath via Obsidian's helper.
+				const electron = (window as unknown as { require?: (m: string) => unknown }).require;
+				if (electron) {
+					const { shell } = electron("electron") as { shell: { openPath: (p: string) => Promise<string> } };
+					await shell.openPath(fullPath);
+					return;
+				}
+			}
+		} catch {
+			// fall through to notice
+		}
+		new Notice(
+			`Couldn't open ${vaultPath} in Obsidian (no TFile available). Install a "Show Hidden Files" community plugin for full Obsidian integration in project-root mode.`,
+			8000,
+		);
+	}
+
+	private cycleActiveFile(checking: boolean, which: "status" | "horizon"): boolean {
+		const file = this.app.workspace.getActiveFile();
+		if (!file || !isMarkdownTAbstractFile(file)) return false;
+		const logical = this.vaultPathToLogical(file.path);
+		if (!logical) return false;
+		const item = this.index.get(logical);
+		if (!item) return false;
+
+		if (which === "status") {
+			if (item.enums.status === undefined) return false;
+			if (checking) return true;
+			const nextEnum = nextInCycle(item.enums.status, this.settings.statusEnums);
+			void this.applyEnumChange(logical, "Status", nextEnum);
+			return true;
+		}
+
+		if (item.enums.horizon === undefined) return false;
+		if (checking) return true;
+		const nextEnum = nextInCycle(item.enums.horizon, this.settings.horizonEnums);
+		const fieldName = item.raw["horizon"] !== undefined ? "Horizon" : "Priority";
+		void this.applyEnumChange(logical, fieldName, nextEnum);
+		return true;
+	}
+
+	async applyEnumChange(logicalPath: string, field: string, newEnum: string): Promise<void> {
+		const content = await this.access.read(logicalPath);
+		const next = updateBoldKeyEnum(content, field, newEnum);
+		if (next === content) return;
+		await this.access.write(logicalPath, next);
+		// In project-root mode without a hidden-files plugin, vault events won't
+		// fire — surface the change via the index manually.
+		if (!this.access.usesVaultEvents()) {
+			await this.index.onPathModified(logicalPath);
+		}
+		new Notice(`Kansidian: ${field} → ${newEnum}`);
 	}
 
 	private async activateView(viewType: string): Promise<void> {
@@ -153,61 +316,19 @@ export default class KansidianPlugin extends Plugin {
 		await workspace.revealLeaf(leaf);
 	}
 
-	private cycleActiveFile(checking: boolean, which: "status" | "horizon"): boolean {
-		const file = this.app.workspace.getActiveFile();
-		if (!file || !isMarkdownFile(file)) return false;
-
-		const item = this.index.get(file);
-		if (!item) return false;
-
-		if (which === "status") {
-			if (item.enums.status === undefined) return false;
-			if (checking) return true;
-			const nextEnum = nextInCycle(item.enums.status, this.settings.statusEnums);
-			void this.applyEnumChange(file, "Status", nextEnum);
-			return true;
+	private maybeNudgeHiddenFilesPlugin(): void {
+		if (this.vaultMode !== "project-root") return;
+		if (this.hiddenPluginNoticeShown) return;
+		const plugins = (this.app as unknown as { plugins?: { enabledPlugins?: Set<string> } }).plugins;
+		const enabled = plugins?.enabledPlugins;
+		if (!enabled) return;
+		for (const id of KNOWN_HIDDEN_FILES_PLUGINS) {
+			if (enabled.has(id)) return; // already covered
 		}
-
-		// which === "horizon"
-		if (item.enums.horizon === undefined) return false;
-		if (checking) return true;
-		const nextEnum = nextInCycle(item.enums.horizon, this.settings.horizonEnums);
-		// Write to whichever field name the file actually uses on disk.
-		const fieldName = item.raw["horizon"] !== undefined ? "Horizon" : "Priority";
-		void this.applyEnumChange(file, fieldName, nextEnum);
-		return true;
-	}
-
-	async refreshMode(): Promise<void> {
-		const previous = this.mode;
-		const file = this.app.vault.getAbstractFileByPath(PHASE_YAML_PATH);
-		if (!(file instanceof TFile)) {
-			this.mode = "unset";
-		} else {
-			const content = await this.app.vault.read(file);
-			const match = content.match(/^mode:\s*([a-z_]+)\s*$/m);
-			const parsed = match?.[1] as ProjectMode | undefined;
-			this.mode = parsed && KNOWN_MODES.includes(parsed) ? parsed : "unset";
-		}
-		if (this.mode !== previous) {
-			// Notify subscribers (views) so they re-render with the new mode.
-			this.index.notifyChange();
-		}
-	}
-
-	private async rescanAndHint(): Promise<void> {
-		await this.index.rebuild();
+		this.hiddenPluginNoticeShown = true;
 		new Notice(
-			"Kansidian index rebuilt. SweetClaude's cached session-status.txt does not refresh on Obsidian-driven writes — run /sweetclaude:status in Claude Code (or edit a watched state file) to refresh it.",
-			8000,
+			"Kansidian: running in project-root mode. Install a show-hidden-files community plugin to let click-to-open land in Obsidian instead of the system handler.",
+			10000,
 		);
-	}
-
-	async applyEnumChange(file: TFile, field: string, newEnum: string): Promise<void> {
-		const content = await this.app.vault.read(file);
-		const next = updateBoldKeyEnum(content, field, newEnum);
-		if (next === content) return;
-		await this.app.vault.modify(file, next);
-		new Notice(`Kansidian: ${field} → ${newEnum}`);
 	}
 }

@@ -1,4 +1,4 @@
-import { ItemView, Menu, setIcon, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, Menu, setIcon, WorkspaceLeaf } from "obsidian";
 import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 import { captureFocus, restoreFocus } from "./preserve-focus";
@@ -17,7 +17,7 @@ interface ListFilters {
 
 type EnumField = "Status" | "Horizon" | "Priority";
 
-type Entry = [TFile, ParsedItem];
+type Entry = [string, ParsedItem]; // [logicalPath, item]
 
 export class KansidianListView extends ItemView {
 	private readonly plugin: KansidianPlugin;
@@ -181,7 +181,7 @@ export class KansidianListView extends ItemView {
 		});
 	}
 
-	private renderRow(tbody: HTMLElement, file: TFile, item: ParsedItem): void {
+	private renderRow(tbody: HTMLElement, logicalPath: string, item: ParsedItem): void {
 		const row = tbody.createEl("tr", { cls: "kansidian-list-row" });
 
 		const idCell = row.createEl("td", { text: item.id, cls: "kansidian-list-id" });
@@ -191,11 +191,11 @@ export class KansidianListView extends ItemView {
 		row.createEl("td", { text: item.enums.milestone ?? "", cls: "kansidian-list-milestone" });
 		row.createEl("td", { text: item.raw["scope"] ?? "", cls: "kansidian-list-scope" });
 
-		this.renderEnumCell(statusCell, file, item, "status", this.plugin.settings.statusEnums);
-		this.renderEnumCell(horizonCell, file, item, "horizon", this.plugin.settings.horizonEnums);
+		this.renderEnumCell(statusCell, logicalPath, item, "status", this.plugin.settings.statusEnums);
+		this.renderEnumCell(horizonCell, logicalPath, item, "horizon", this.plugin.settings.horizonEnums);
 
 		const openFile = (): void => {
-			void this.app.workspace.getLeaf("tab").openFile(file);
+			void this.plugin.openLogical(logicalPath);
 		};
 		idCell.addEventListener("click", openFile);
 		titleCell.addEventListener("click", openFile);
@@ -203,7 +203,7 @@ export class KansidianListView extends ItemView {
 
 	private renderEnumCell(
 		cell: HTMLElement,
-		file: TFile,
+		logicalPath: string,
 		item: ParsedItem,
 		which: "status" | "horizon",
 		vocabulary: string[],
@@ -216,13 +216,13 @@ export class KansidianListView extends ItemView {
 
 		cell.addEventListener("click", (event) => {
 			event.stopPropagation();
-			this.openEnumMenu(event, file, item, which, vocabulary, current);
+			this.openEnumMenu(event, logicalPath, item, which, vocabulary, current);
 		});
 	}
 
 	private openEnumMenu(
 		event: MouseEvent,
-		file: TFile,
+		logicalPath: string,
 		item: ParsedItem,
 		which: "status" | "horizon",
 		vocabulary: string[],
@@ -245,7 +245,7 @@ export class KansidianListView extends ItemView {
 							: item.raw["horizon"] !== undefined
 								? "Horizon"
 								: "Priority";
-					void this.plugin.applyEnumChange(file, field, opt);
+					void this.plugin.applyEnumChange(logicalPath, field, opt);
 				});
 			});
 		}
