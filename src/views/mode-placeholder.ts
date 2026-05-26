@@ -17,7 +17,7 @@ const COPY: Record<ProjectMode, PlaceholderCopy | null> = {
 	flow: {
 		heading: "Flow mode — work is inferred, not tracked",
 		body: "Flow mode is for early-exploration solo work where SweetClaude infers what you're doing without ceremony. There aren't tracked work items to render here.",
-		hint: "Switch to kanban or agile mode in SweetClaude (set mode in state/phase.yaml) when you want a board.",
+		hint: "Switch to kanban or agile mode in SweetClaude (run /sweetclaude:project-mode shift kanban) when you want a board.",
 	},
 	shape_up: {
 		heading: "Shape Up mode — no backlog by design",

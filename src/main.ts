@@ -150,10 +150,13 @@ export default class KansidianPlugin extends Plugin {
 			}),
 		);
 
-		// Watch phase.yaml for mode changes (regardless of vault layout).
+		// Watch SweetClaude's state files for mode changes (regardless of vault
+		// layout). Post-v3.18 projects keep the value in sweetclaude.yaml; older
+		// projects still write it to phase.yaml.
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
-				if (this.vaultPathToLogical(file.path) === "state/phase.yaml") {
+				const logical = this.vaultPathToLogical(file.path);
+				if (logical === "state/sweetclaude.yaml" || logical === "state/phase.yaml") {
 					void this.refreshMode();
 				}
 			}),
@@ -190,15 +193,34 @@ export default class KansidianPlugin extends Plugin {
 
 	async refreshMode(): Promise<void> {
 		const previous = this.mode;
-		try {
-			const content = await this.access.read("state/phase.yaml");
-			const match = content.match(/^mode:\s*([a-z_]+)\s*$/m);
-			const parsed = match?.[1] as ProjectMode | undefined;
-			this.mode = parsed && KNOWN_MODES.includes(parsed) ? parsed : "unset";
-		} catch {
-			this.mode = "unset";
+		// sweetclaude.yaml is canonical post-v3.18. When present, treat it as
+		// the only source of truth — older projects without it still keep mode
+		// in phase.yaml, so probe that as the fallback.
+		const sourcePaths = ["state/sweetclaude.yaml", "state/phase.yaml"];
+		this.mode = "unset";
+		for (const path of sourcePaths) {
+			const result = await this.readModeFrom(path);
+			if (result.exists) {
+				this.mode = result.mode ?? "unset";
+				break;
+			}
 		}
 		if (this.mode !== previous) this.index.notifyChange();
+	}
+
+	private async readModeFrom(
+		logicalPath: string,
+	): Promise<{ exists: boolean; mode: ProjectMode | null }> {
+		let content: string;
+		try {
+			content = await this.access.read(logicalPath);
+		} catch {
+			return { exists: false, mode: null };
+		}
+		const match = content.match(/^mode:\s*([a-z_]+)\s*$/m);
+		const parsed = match?.[1] as ProjectMode | undefined;
+		const mode = parsed && KNOWN_MODES.includes(parsed) ? parsed : null;
+		return { exists: true, mode };
 	}
 
 	private async rescanAndHint(): Promise<void> {

@@ -142,12 +142,21 @@ function matchesAnyRoot(path: string, roots: string[]): boolean {
 }
 
 // Detect which mode the vault is in by looking for SweetClaude's state file.
-// Returns null if neither layout looks valid (no SweetClaude project here).
+// Probes the unified sweetclaude.yaml (canonical post-v3.18) first, then the
+// legacy phase.yaml (still present on projects mid-migration or running an
+// older framework). Returns null if neither layout looks valid.
 export async function detectMode(vault: Vault): Promise<"legacy" | "project-root" | null> {
 	const adapter = vault.adapter;
-	const legacy = await adapter.exists("state/phase.yaml");
-	if (legacy) return "legacy";
-	const projectRoot = await adapter.exists(".sweetclaude/state/phase.yaml");
-	if (projectRoot) return "project-root";
+	const legacyCandidates = ["state/sweetclaude.yaml", "state/phase.yaml"];
+	for (const path of legacyCandidates) {
+		if (await adapter.exists(path)) return "legacy";
+	}
+	const projectRootCandidates = [
+		".sweetclaude/state/sweetclaude.yaml",
+		".sweetclaude/state/phase.yaml",
+	];
+	for (const path of projectRootCandidates) {
+		if (await adapter.exists(path)) return "project-root";
+	}
 	return null;
 }

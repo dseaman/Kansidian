@@ -67,10 +67,12 @@ export class KansidianSettingTab extends PluginSettingTab {
 			intro.appendText(
 				"No project detected in this vault. Kandyban looks for ",
 			);
-			intro.createEl("code", { text: "state/phase.yaml" });
+			intro.createEl("code", { text: "state/sweetclaude.yaml" });
 			intro.appendText(" at the vault root, or ");
-			intro.createEl("code", { text: ".sweetclaude/state/phase.yaml" });
-			intro.appendText(" inside it.");
+			intro.createEl("code", { text: ".sweetclaude/state/sweetclaude.yaml" });
+			intro.appendText(" inside it. Older projects with ");
+			intro.createEl("code", { text: "state/phase.yaml" });
+			intro.appendText(" are also detected.");
 		}
 
 		new Setting(containerEl)
