@@ -4,8 +4,8 @@ import { builtinModules } from 'node:module';
 
 const banner =
 `/*
- * Kansidian — bundled by esbuild from src/main.ts.
- * Source: https://github.com/dseaman/Kansidian
+ * Kandyban — bundled by esbuild from src/main.ts.
+ * Source: https://github.com/dseaman/Kandyban
  */
 `;
 

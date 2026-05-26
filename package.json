@@ -22,7 +22,7 @@
 	"author": "Dan Seaman",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/dseaman/Kansidian.git"
+		"url": "git+https://github.com/dseaman/Kandyban.git"
 	},
 	"devDependencies": {
 		"@eslint/js": "9.30.1",

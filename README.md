@@ -5,7 +5,7 @@
 > Works particularly well with [SweetClaude](https://github.com/carson-sweet/sweetclaude)-structured projects (the convention Kandyban was originally built against), but supports any markdown items that lead with a bold-key block: `**Status:** open`, `**Priority:** next`, `**Milestone:** MS-001`, etc.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://github.com/dseaman/Kansidian/releases)
+[![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://github.com/dseaman/Kandyban/releases)
 
 Kandyban gives SweetClaude users a board and a list view over their project's issues (`I-*`) and milestones (`MS-*`). It reads SweetClaude's native bold-key markdown directly, lets you drag cards between status columns, edit enums inline, search and filter, and writes changes back to the same files with annotations preserved byte-identical.
 
@@ -55,12 +55,12 @@ SweetClaude in Claude Code remains the primary working interface — Kandyban is
 ### BRAT (recommended)
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins.
-2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kansidian`.
+2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kandyban`.
 3. Enable **Kandyban** in Community Plugins.
 
 ### Manual install
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub release](https://github.com/dseaman/Kansidian/releases).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub release](https://github.com/dseaman/Kandyban/releases).
 2. Create the plugin folder inside whichever vault you'll use:
   - Option A (project root as vault): `<your-project>/.obsidian/plugins/kandyban/`
   - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kandyban/`
