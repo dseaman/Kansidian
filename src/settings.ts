@@ -49,14 +49,31 @@ export class KansidianSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		const mode = this.plugin.vaultMode;
 		const intro = containerEl.createEl("p");
-		intro.appendText(
-			"Kansidian assumes you open your project's ",
-		);
-		intro.createEl("code", { text: ".sweetclaude/" });
-		intro.appendText(
-			" directory as the Obsidian vault (not the project root). Paths below are vault-relative.",
-		);
+		if (mode === "legacy") {
+			intro.appendText("Vault layout detected: ");
+			intro.createEl("strong", { text: ".sweetclaude/-as-vault" });
+			intro.appendText(" (legacy). Paths below are vault-relative.");
+		} else if (mode === "project-root") {
+			intro.appendText("Vault layout detected: ");
+			intro.createEl("strong", { text: "project-root" });
+			intro.appendText(". Kandyban reads ");
+			intro.createEl("code", { text: ".sweetclaude/" });
+			intro.appendText(
+				" via vault.adapter (Obsidian's indexer skips dotdirs). Paths below are relative to ",
+			);
+			intro.createEl("code", { text: ".sweetclaude/" });
+			intro.appendText(".");
+		} else {
+			intro.appendText(
+				"No project detected in this vault. Kandyban looks for ",
+			);
+			intro.createEl("code", { text: "state/phase.yaml" });
+			intro.appendText(" at the vault root, or ");
+			intro.createEl("code", { text: ".sweetclaude/state/phase.yaml" });
+			intro.appendText(" inside it.");
+		}
 
 		new Setting(containerEl)
 			.setName("Backlog path")
