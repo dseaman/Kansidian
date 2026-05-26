@@ -1,6 +1,6 @@
-# Kansidian
+# SweetClaude Kanban
 
-> A non-destructive Kanban view over [SweetClaude](https://github.com/carson-sweet/sweetclaude) project work, inside [Obsidian](https://obsidian.md).
+> A non-destructive Kanban view over [SweetClaude](https://github.com/carson-sweet/sweetclaude) project work, inside [Obsidian](https://obsidian.md). Also known by its repo / package handle, `kansidian`.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://github.com/dseaman/Kansidian/releases)
