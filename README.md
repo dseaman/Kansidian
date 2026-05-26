@@ -232,6 +232,10 @@ Kansidian's own in-memory index stays in sync with the vault via Obsidian's file
 
 **"Drag-drop opens the wrong file when I have duplicate IDs."** This was a real bug fixed in I-007 — make sure you're on the latest build. The drag payload now uses file path (unique), not item ID.
 
+**"Don't rename the vault in Obsidian."** Obsidian's "Rename vault" action *moves the directory on disk*. If your vault is `.sweetclaude/`, renaming it breaks every SweetClaude tool that hardcodes that path — slash commands, the state-regenerator hook, the artifact tooling, and Kansidian itself. If you need a friendlier label in Obsidian's vault switcher, see the multi-vault note below.
+
+**"All my Kansidian vaults show as 'sweetclaude' in Obsidian's vault switcher."** Known consequence of the vault-as-`.sweetclaude/` model — every project's vault root has the same name. Workarounds: (a) hover over the entry to see the full path tooltip; (b) wait for the planned "open project root as vault" support (see roadmap) which will let you pick a per-project name; (c) use the non-hidden symlink trick from [Picking the hidden folder](#picking-the-hidden-folder) and give each symlink a project-specific name.
+
 ## Development
 
 ```bash
