@@ -11,6 +11,22 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 ---
 
+## Screenshots
+
+### Board view
+
+![Kansidian board view showing columns by status with cards](docs/screenshots/board.png)
+
+### List view with inline status picker
+
+![Kansidian list view with a status cell expanded into a picker menu](docs/screenshots/list-picker.png)
+
+### Settings
+
+![Kansidian settings tab](docs/screenshots/settings.png)
+
+---
+
 ## Features
 
 - **Board view (kanban).** Columns by status, cards by work item, native HTML5 drag-and-drop between columns. Cards show ID, title, milestone, and a horizon chip.
