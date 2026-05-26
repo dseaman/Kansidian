@@ -75,7 +75,7 @@ export default class KansidianPlugin extends Plugin {
 
 		this.addSettingTab(new KansidianSettingTab(this.app, this));
 
-		this.addRibbonIcon("kanban-square", "Kansidian board", () => {
+		this.addRibbonIcon("kanban-square", "Kandyban board", () => {
 			void this.activateView(KANSIDIAN_BOARD_VIEW_TYPE);
 		});
 
@@ -165,11 +165,11 @@ export default class KansidianPlugin extends Plugin {
 			this.maybeNudgeHiddenFilesPlugin();
 		});
 
-		console.debug(`Kansidian: loaded (vaultMode=${this.vaultMode})`);
+		console.debug(`Kandyban: loaded (vaultMode=${this.vaultMode})`);
 	}
 
 	onunload() {
-		console.debug("Kansidian: unloaded");
+		console.debug("Kandyban: unloaded");
 	}
 
 	async loadSettings() {
@@ -208,7 +208,7 @@ export default class KansidianPlugin extends Plugin {
 				? " (project-root mode reads via vault.adapter — external edits don't fire vault events; rescan after Claude Code sessions if needed.)"
 				: "";
 		new Notice(
-			`Kansidian index rebuilt.${modeNote} SweetClaude's cached session-status.txt does not refresh on Obsidian-driven writes — run /sweetclaude:status in Claude Code (or edit a watched state file) to refresh it.`,
+			`Kandyban index rebuilt.${modeNote} If your project uses SweetClaude, its cached session-status.txt does not refresh on Obsidian-driven writes — run /sweetclaude:status in Claude Code (or edit a watched state file) to refresh it.`,
 			10000,
 		);
 	}
@@ -300,7 +300,7 @@ export default class KansidianPlugin extends Plugin {
 		if (!this.access.usesVaultEvents()) {
 			await this.index.onPathModified(logicalPath);
 		}
-		new Notice(`Kansidian: ${field} → ${newEnum}`);
+		new Notice(`Kandyban: ${field} → ${newEnum}`);
 	}
 
 	private async activateView(viewType: string): Promise<void> {
@@ -327,7 +327,7 @@ export default class KansidianPlugin extends Plugin {
 		}
 		this.hiddenPluginNoticeShown = true;
 		new Notice(
-			"Kansidian: running in project-root mode. Install a show-hidden-files community plugin to let click-to-open land in Obsidian instead of the system handler.",
+			"Kandyban: running in project-root mode. Install a show-hidden-files community plugin to let click-to-open land in Obsidian instead of the system handler.",
 			10000,
 		);
 	}

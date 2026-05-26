@@ -22,7 +22,7 @@ const COPY: Record<ProjectMode, PlaceholderCopy | null> = {
 	shape_up: {
 		heading: "Shape Up mode — no backlog by design",
 		body: "In Shape Up mode, new work enters through pitches with a fixed appetite, not a backlog. The kanban board doesn't apply here.",
-		hint: "A pitch-board view is on the Kansidian roadmap. For now, browse pitches in Obsidian's native pane.",
+		hint: "A pitch-board view is on the Kandyban roadmap. For now, browse pitches in Obsidian's native pane.",
 	},
 };
 

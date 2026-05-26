@@ -1,7 +1,7 @@
 {
-	"name": "kansidian",
-	"version": "0.2.3",
-	"description": "Obsidian plugin: non-destructive Kanban view over SweetClaude backlog and milestones.",
+	"name": "kandyban",
+	"version": "0.2.4",
+	"description": "Obsidian plugin: non-destructive Kanban view over markdown backlog and milestones.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

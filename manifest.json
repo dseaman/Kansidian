@@ -1,9 +1,9 @@
 {
-	"id": "kansidian",
-	"name": "SweetClaude Kanban",
-	"version": "0.2.3",
+	"id": "kandyban",
+	"name": "Kandyban",
+	"version": "0.2.4",
 	"minAppVersion": "1.5.0",
-	"description": "Non-destructive Kanban view over SweetClaude project backlog and milestones. Read, reprioritize, and move items between milestones without touching SweetClaude's native markdown format.",
+	"description": "Non-destructive Kanban view over markdown-based project backlog and milestones. Reads bold-key metadata directly, lets you drag cards between status columns, edit enums inline, and writes changes back without touching the rest of the file.",
 	"author": "Dan Seaman",
 	"authorUrl": "https://github.com/dseaman",
 	"isDesktopOnly": true

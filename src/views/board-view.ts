@@ -6,7 +6,7 @@ import { modeBadge, renderModePlaceholder, shouldShowPlaceholder } from "./mode-
 
 const FOCUSABLE_SELECTORS = [".kansidian-board-search"];
 
-export const KANSIDIAN_BOARD_VIEW_TYPE = "kansidian-board";
+export const KANSIDIAN_BOARD_VIEW_TYPE = "kandyban-board";
 
 interface BoardFilters {
 	search: string;
@@ -18,7 +18,7 @@ type Entry = [string, ParsedItem]; // [logicalPath, item]
 
 // Drag payload: we use the logical file path (unique per file) rather than
 // the item id (not unique when data has duplicate MS-NNN ids).
-const DRAG_MIME = "application/x-kansidian-file-path";
+const DRAG_MIME = "application/x-kandyban-file-path";
 
 // Highlight window (ms) after a drag-drop during which the destination card
 // gets the "just moved" CSS class. Slightly larger than the flash animation
@@ -45,7 +45,7 @@ export class KansidianBoardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Kansidian board";
+		return "Kandyban board";
 	}
 
 	getIcon(): string {
@@ -86,7 +86,7 @@ export class KansidianBoardView extends ItemView {
 			const filtered = this.applyFilters(entries);
 
 			const header = root.createDiv({ cls: "kansidian-board-header" });
-			header.createEl("h2", { text: `Kansidian board (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
+			header.createEl("h2", { text: `Kandyban board (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
 
 			this.renderToolbar(root.createDiv({ cls: "kansidian-board-toolbar" }), entries);
 

@@ -1,13 +1,15 @@
-# SweetClaude Kanban
+# Kandyban
 
-> A non-destructive Kanban view over [SweetClaude](https://github.com/carson-sweet/sweetclaude) project work, inside [Obsidian](https://obsidian.md). Also known by its repo / package handle, `kansidian`.
+> A non-destructive Kanban view for markdown projects, inside [Obsidian](https://obsidian.md). Reads bold-key metadata directly, lets you drag cards between status columns, and writes changes back without touching the rest of the file.
+>
+> Works particularly well with [SweetClaude](https://github.com/carson-sweet/sweetclaude)-structured projects (the convention Kandyban was originally built against), but supports any markdown items that lead with a bold-key block: `**Status:** open`, `**Priority:** next`, `**Milestone:** MS-001`, etc.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://github.com/dseaman/Kansidian/releases)
 
-Kansidian gives SweetClaude users a board and a list view over their project's issues (`I-*`) and milestones (`MS-*`). It reads SweetClaude's native bold-key markdown directly, lets you drag cards between status columns, edit enums inline, search and filter, and writes changes back to the same files with annotations preserved byte-identical.
+Kandyban gives SweetClaude users a board and a list view over their project's issues (`I-*`) and milestones (`MS-*`). It reads SweetClaude's native bold-key markdown directly, lets you drag cards between status columns, edit enums inline, search and filter, and writes changes back to the same files with annotations preserved byte-identical.
 
-SweetClaude in Claude Code remains the primary working interface — Kansidian is a visibility and ergonomics layer alongside it.
+SweetClaude in Claude Code remains the primary working interface — Kandyban is a visibility and ergonomics layer alongside it.
 
 ---
 
@@ -15,15 +17,15 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 ### Board view
 
-![Kansidian board view showing columns by status with cards](docs/screenshots/board.png)
+![Kandyban board view showing columns by status with cards](docs/screenshots/board.png)
 
 ### List view with inline status picker
 
-![Kansidian list view with a status cell expanded into a picker menu](docs/screenshots/list-picker.png)
+![Kandyban list view with a status cell expanded into a picker menu](docs/screenshots/list-picker.png)
 
 ### Settings
 
-![Kansidian settings tab](docs/screenshots/settings.png)
+![Kandyban settings tab](docs/screenshots/settings.png)
 
 ---
 
@@ -36,7 +38,7 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 - **Search.** Type in the toolbar's search box to filter by ID or title. Focus and cursor position survive re-renders. Clear with the ✕ button or by clearing the field.
 - **Filter dropdowns.** Filter by status, horizon, or milestone. Filters are populated from the actual values present in your vault.
 - **FLIP animation.** When a card moves between columns, it animates from its old position to the new one with a brief destination flash so you can track what happened.
-- **Mode-aware views.** Kansidian reads your project's `mode` field from `state/phase.yaml` and adapts: kanban/agile render normally, flow mode shows a placeholder ("work is inferred"), Shape Up mode explains the kanban doesn't apply, unset mode renders normally (for SweetClaude projects that haven't set a mode field — e.g. older convention).
+- **Mode-aware views.** Kandyban reads your project's `mode` field from `state/phase.yaml` and adapts: kanban/agile render normally, flow mode shows a placeholder ("work is inferred"), Shape Up mode explains the kanban doesn't apply, unset mode renders normally (for SweetClaude projects that haven't set a mode field — e.g. older convention).
 - **Cycle commands.** `Cycle status forward` and `Cycle horizon forward` rotate through your configured enum vocabularies for the active file — useful with hotkeys.
 - **Configurable enum vocabularies.** Status and horizon rotation sets are settings — set your own if your project uses non-default values.
 - **Dual convention support.** Reads both the framework-standard `I-*` (current SweetClaude) and the legacy `BL-*` convention some projects use. Recognizes `**Horizon:**` and `**Priority:**` as the same field. Milestone values like `MS-002-browser-extension-mvp` canonicalize to `MS-002`.
@@ -54,22 +56,22 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins.
 2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kansidian`.
-3. Enable **SweetClaude Kanban** in Community Plugins.
+3. Enable **Kandyban** in Community Plugins.
 
 ### Manual install
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub release](https://github.com/dseaman/Kansidian/releases).
 2. Create the plugin folder inside whichever vault you'll use:
-   - Option A (project root as vault): `<your-project>/.obsidian/plugins/kansidian/`
-   - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kansidian/`
+   - Option A (project root as vault): `<your-project>/.obsidian/plugins/kandyban/`
+   - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kandyban/`
 3. Drop the three files into that folder.
-4. In Obsidian, enable Kansidian in **Community plugins**.
+4. In Obsidian, enable Kandyban in **Community plugins**.
 
 See [Vault setup](#vault-setup) for the difference between the two layouts.
 
 ## Vault setup
 
-Kansidian supports two vault layouts and auto-detects which one you're using. Pick whichever fits your workflow:
+Kandyban supports two vault layouts and auto-detects which one you're using. Pick whichever fits your workflow:
 
 ### Option A — open your project root as the vault (recommended for multi-project setups)
 
@@ -77,15 +79,15 @@ Kansidian supports two vault layouts and auto-detects which one you're using. Pi
 your-project/                     # ← open THIS as your Obsidian vault
 ├── src/                          # your code (visible in the file explorer)
 ├── package.json                  # also visible
-└── .sweetclaude/                 # Kansidian finds and reads this via vault.adapter
+└── .sweetclaude/                 # Kandyban finds and reads this via vault.adapter
     ├── product/{backlog,issues,milestones}/
     ├── state/phase.yaml
     └── …
 ```
 
-Each project gets a distinct vault name (your project's directory name) — solves the "all my vaults show as `sweetclaude`" problem. Trade-off: Obsidian's indexer skips dotdirs, so `.sweetclaude/*` files don't have `TFile` references. Kansidian uses `vault.adapter` (low-level filesystem access) for everything it needs internally, so board / list / drag / edit all work — but **click-to-open** a card falls back to the system handler (your OS default markdown app) instead of opening in an Obsidian editor pane.
+Each project gets a distinct vault name (your project's directory name) — solves the "all my vaults show as `sweetclaude`" problem. Trade-off: Obsidian's indexer skips dotdirs, so `.sweetclaude/*` files don't have `TFile` references. Kandyban uses `vault.adapter` (low-level filesystem access) for everything it needs internally, so board / list / drag / edit all work — but **click-to-open** a card falls back to the system handler (your OS default markdown app) instead of opening in an Obsidian editor pane.
 
-To get full Obsidian integration in Option A, install a community plugin that makes the indexer include dotdirs (search community plugins for "Show Hidden Files" or "Show Dotfiles"). With one installed, `.sweetclaude/*` becomes regular indexed files and click-to-open lands in Obsidian. Kansidian detects this at load and adapts.
+To get full Obsidian integration in Option A, install a community plugin that makes the indexer include dotdirs (search community plugins for "Show Hidden Files" or "Show Dotfiles"). With one installed, `.sweetclaude/*` becomes regular indexed files and click-to-open lands in Obsidian. Kandyban detects this at load and adapts.
 
 ### Option B — open `.sweetclaude/` itself as the vault (original mode)
 
@@ -104,19 +106,19 @@ To pick the hidden `.sweetclaude/` folder in the vault picker:
 - **Windows / Linux:** TBD — verify and PR.
 - Or symlink for a friendlier name: `ln -sf .sweetclaude my-project-vault` then pick `my-project-vault`.
 
-### Which layout is Kansidian using right now?
+### Which layout is Kandyban using right now?
 
-The view headers show your detected layout — e.g. `Kansidian board (134 of 134) · kanban`. Kansidian's `Rescan vault and show cache hint` command also surfaces the current mode in its Notice.
+The view headers show your detected layout — e.g. `Kandyban board (134 of 134) · kanban`. Kandyban's `Rescan vault and show cache hint` command also surfaces the current mode in its Notice.
 
 ## Quick start
 
-After installing and enabling Kansidian:
+After installing and enabling Kandyban:
 
-1. Click the **kanban-square icon** in Obsidian's left ribbon (or open the command palette with `⌘+P` and search for "Kansidian: Open board").
+1. Click the **kanban-square icon** in Obsidian's left ribbon (or open the command palette with `⌘+P` and search for "Kandyban: Open board").
 2. The board renders columns by status (`open`, `in-progress`, `done` by default), with one card per work item.
 3. **Drag a card** to a different column to change its status. The underlying `.md` file is updated immediately; annotations are preserved.
 4. **Click a card** to open the underlying file in a new pane.
-5. Open the list view (command palette → "Kansidian: Open list") for a tabular layout with inline enum editing.
+5. Open the list view (command palette → "Kandyban: Open list") for a tabular layout with inline enum editing.
 
 ## Usage reference
 
@@ -144,7 +146,7 @@ Both views share the same toolbar pattern:
 
 ### Drag and drop
 
-Only available in the board view. The plugin uses a custom MIME type (`application/x-kansidian-file-path`) so the drag payload identifies the exact source file by path — not by item ID. This avoids mis-targeting when a project has duplicate IDs (it happens — Saive has six MS-NNN files where IDs collide).
+Only available in the board view. The plugin uses a custom MIME type (`application/x-kandyban-file-path`) so the drag payload identifies the exact source file by path — not by item ID. This avoids mis-targeting when a project has duplicate IDs (it happens — Saive has six MS-NNN files where IDs collide).
 
 ### Inline enum picker
 
@@ -161,15 +163,15 @@ Both commands no-op gracefully if the active file isn't a SweetClaude artifact, 
 
 ### Ribbon icon
 
-A kanban-square icon appears in Obsidian's left ribbon. Click to open the board view. Tooltip: "Kansidian board."
+A kanban-square icon appears in Obsidian's left ribbon. Click to open the board view. Tooltip: "Kandyban board."
 
 ### Rescan command
 
-`Kansidian: Rescan vault and show cache hint` rebuilds Kansidian's in-memory index from disk (useful if you suspect your edits diverged from what the plugin sees) and shows a Notice reminding you how to refresh SweetClaude's own cached `session-status.txt`. See [SweetClaude cache staleness](#sweetclaude-cache-staleness).
+`Kandyban: Rescan vault and show cache hint` rebuilds Kandyban's in-memory index from disk (useful if you suspect your edits diverged from what the plugin sees) and shows a Notice reminding you how to refresh SweetClaude's own cached `session-status.txt`. See [SweetClaude cache staleness](#sweetclaude-cache-staleness).
 
 ## Settings reference
 
-Open **Settings → Community plugins → Kansidian** to configure:
+Open **Settings → Community plugins → Kandyban** to configure:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
@@ -183,7 +185,7 @@ All three path fields can be cleared if you don't have that artifact type. Path 
 
 ## Project mode support
 
-Kansidian reads the `mode` field from your vault's `state/phase.yaml` and adapts:
+Kandyban reads the `mode` field from your vault's `state/phase.yaml` and adapts:
 
 | Mode | Behavior |
 | --- | --- |
@@ -194,7 +196,7 @@ Kansidian reads the `mode` field from your vault's `state/phase.yaml` and adapts
 | `flow` | Shows a placeholder explaining work is inferred in flow mode and there's nothing to render. |
 | `shape_up` | Shows a placeholder explaining Shape Up has no backlog by design; suggests waiting for a pitch-board view. |
 
-The current mode is shown in the view header (e.g. `Kansidian board (134 of 134) · kanban`). Changing the `mode:` line in `phase.yaml` triggers an automatic refresh — no plugin reload needed.
+The current mode is shown in the view header (e.g. `Kandyban board (134 of 134) · kanban`). Changing the `mode:` line in `phase.yaml` triggers an automatic refresh — no plugin reload needed.
 
 ## How it works
 
@@ -213,7 +215,7 @@ SweetClaude artifact files lead with a bold-key metadata block:
 **Depends on:** I-001, I-002
 ```
 
-When Kansidian writes a change (e.g. cycling status from `in_progress` → `done`), it uses a surgical splice: only the leading enum portion of the targeted `**Field:**` line changes. Everything else — the H1, other bold-key lines, the body, and any annotation after the enum (parentheticals, em-dashes, or `-`  separators) — is preserved byte-identical.
+When Kandyban writes a change (e.g. cycling status from `in_progress` → `done`), it uses a surgical splice: only the leading enum portion of the targeted `**Field:**` line changes. Everything else — the H1, other bold-key lines, the body, and any annotation after the enum (parentheticals, em-dashes, or `-`  separators) — is preserved byte-identical.
 
 The parser and writer are pure TypeScript modules with no Obsidian dependencies, covered by 33 vitest cases including round-trip byte-identity assertions against fixtures drawn from real corpus variation.
 
@@ -221,7 +223,7 @@ The parser and writer are pure TypeScript modules with no Obsidian dependencies,
 
 SweetClaude regenerates a cached `state/session-status.txt` via a Claude Code `PostToolUse` hook that fires after Claude Code's own `Write`/`Edit` tool calls. Obsidian's `vault.modify` writes do not go through Claude Code, so the hook does not fire, and the cache goes stale until something else triggers regeneration.
 
-Practical impact: after using Kansidian to drag cards or cycle enums, your project's cached `session-status.txt` shows pre-edit data. Slash commands that recompute from disk (`/sweetclaude:status`) are unaffected — they show live truth. Slash commands or memory tools that read the cached file will show stale data.
+Practical impact: after using Kandyban to drag cards or cycle enums, your project's cached `session-status.txt` shows pre-edit data. Slash commands that recompute from disk (`/sweetclaude:status`) are unaffected — they show live truth. Slash commands or memory tools that read the cached file will show stale data.
 
 Refresh paths:
 
@@ -229,24 +231,24 @@ Refresh paths:
 - Edit any file in the framework's watched set (e.g. add a noop line to `state/checkpoint.md`) — triggers the regenerator.
 - Start a new Claude Code session — preflight regenerates.
 
-Kansidian's own in-memory index stays in sync with the vault via Obsidian's file-watcher events. The staleness is exclusive to SweetClaude's framework caches, not Kansidian's.
+Kandyban's own in-memory index stays in sync with the vault via Obsidian's file-watcher events. The staleness is exclusive to SweetClaude's framework caches, not Kandyban's.
 
 ## Known limitations
 
 - **Native SweetClaude artifact types beyond `I-*` / `BL-*` / `MS-*` are not surfaced.** Epics, themes, sprints, roadmap items, releases, pitches, and cycles are readable in Obsidian's native pane but not rendered in the board or list. Filter chips for epic / theme are a likely post-MVP addition.
-- **No item creation from inside Kansidian.** Creating a new `I-*` is the framework's job (`/sweetclaude:project-issues new`). A capture command is on the roadmap but blocked on a compatibility-investigation step.
+- **No item creation from inside Kandyban.** Creating a new `I-*` is the framework's job (`/sweetclaude:project-issues new`). A capture command is on the roadmap but blocked on a compatibility-investigation step.
 - **No sprint-aware filtering for agile mode.** Agile-mode projects render the same as kanban-mode projects.
 - **No Shape Up pitch view.** Shape Up projects see only a placeholder.
 - **Desktop-tested only.** The plugin declares `isDesktopOnly: false`, but mobile layouts are unverified.
-- **SweetClaude cache staleness** (see above) — Kansidian can't trigger Claude Code's `PostToolUse` hook from within Obsidian.
+- **SweetClaude cache staleness** (see above) — Kandyban can't trigger Claude Code's `PostToolUse` hook from within Obsidian.
 
 ## Troubleshooting
 
 **"`.sweetclaude/` doesn't show up in Obsidian's vault picker."** Inside the file dialog, press `⌘+Shift+.` (macOS). On Windows/Linux, see [Picking the hidden folder](#picking-the-hidden-folder).
 
-**"The board is empty even though my vault has items."** Check **Settings → Kansidian → paths**. Are the configured paths (backlog / issues / milestones) correct relative to your vault root? Then run **Kansidian: Rescan vault and show cache hint** to force a re-scan.
+**"The board is empty even though my vault has items."** Check **Settings → Kandyban → paths**. Are the configured paths (backlog / issues / milestones) correct relative to your vault root? Then run **Kandyban: Rescan vault and show cache hint** to force a re-scan.
 
-**"The board shows a placeholder about flow mode but I have items."** Your `state/phase.yaml` has `mode: flow` set. Either remove the line (Kansidian will render normally) or change the mode to `kanban` / `agile`.
+**"The board shows a placeholder about flow mode but I have items."** Your `state/phase.yaml` has `mode: flow` set. Either remove the line (Kandyban will render normally) or change the mode to `kanban` / `agile`.
 
 **"My status changes don't appear in `/sweetclaude:status` output."** That's likely the cache staleness issue. Run `/sweetclaude:status` again — it recomputes from disk. Or edit `state/checkpoint.md` to trigger regeneration.
 
@@ -254,9 +256,9 @@ Kansidian's own in-memory index stays in sync with the vault via Obsidian's file
 
 **"Drag-drop opens the wrong file when I have duplicate IDs."** This was a real bug fixed in I-007 — make sure you're on the latest build. The drag payload now uses file path (unique), not item ID.
 
-**"Don't rename the vault in Obsidian."** Obsidian's "Rename vault" action *moves the directory on disk*. If your vault is `.sweetclaude/`, renaming it breaks every SweetClaude tool that hardcodes that path — slash commands, the state-regenerator hook, the artifact tooling, and Kansidian itself. If you need a friendlier label in Obsidian's vault switcher, see the multi-vault note below.
+**"Don't rename the vault in Obsidian."** Obsidian's "Rename vault" action *moves the directory on disk*. If your vault is `.sweetclaude/`, renaming it breaks every SweetClaude tool that hardcodes that path — slash commands, the state-regenerator hook, the artifact tooling, and Kandyban itself. If you need a friendlier label in Obsidian's vault switcher, see the multi-vault note below.
 
-**"All my Kansidian vaults show as 'sweetclaude' in Obsidian's vault switcher."** Known consequence of the vault-as-`.sweetclaude/` model — every project's vault root has the same name. Workarounds: (a) hover over the entry to see the full path tooltip; (b) wait for the planned "open project root as vault" support (see roadmap) which will let you pick a per-project name; (c) use the non-hidden symlink trick from [Picking the hidden folder](#picking-the-hidden-folder) and give each symlink a project-specific name.
+**"All my Kandyban vaults show as 'sweetclaude' in Obsidian's vault switcher."** Known consequence of the vault-as-`.sweetclaude/` model — every project's vault root has the same name. Workarounds: (a) hover over the entry to see the full path tooltip; (b) wait for the planned "open project root as vault" support (see roadmap) which will let you pick a per-project name; (c) use the non-hidden symlink trick from [Picking the hidden folder](#picking-the-hidden-folder) and give each symlink a project-specific name.
 
 ## Development
 
@@ -283,13 +285,13 @@ npm run test:watch
 To test the plugin against your own SweetClaude vault while iterating, symlink the built artifacts into the target vault:
 
 ```bash
-mkdir -p /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian
+mkdir -p /path/to/your-project/.sweetclaude/.obsidian/plugins/kandyban
 for f in main.js manifest.json styles.css; do
-  ln -sf "$PWD/$f" /path/to/your-project/.sweetclaude/.obsidian/plugins/kansidian/$f
+  ln -sf "$PWD/$f" /path/to/your-project/.sweetclaude/.obsidian/plugins/kandyban/$f
 done
 ```
 
-Then enable Kansidian in that vault and reload Obsidian (or toggle the plugin off and on) to pick up new builds.
+Then enable Kandyban in that vault and reload Obsidian (or toggle the plugin off and on) to pick up new builds.
 
 ## Roadmap
 
@@ -313,7 +315,7 @@ Before submitting a PR, please:
 
 ## Acknowledgments
 
-- **SweetClaude** — the framework Kansidian sits beside. Project work tracked through SweetClaude's own conventions; Kansidian honors the formats it produces.
+- **SweetClaude** — the framework Kandyban sits beside. Project work tracked through SweetClaude's own conventions; Kandyban honors the formats it produces.
 - **Obsidian** — the platform.
 - The plugin's structure derives from the [Obsidian sample plugin template](https://github.com/obsidianmd/obsidian-sample-plugin), heavily rewritten.
 

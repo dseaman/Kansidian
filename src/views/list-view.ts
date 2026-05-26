@@ -6,7 +6,7 @@ import { modeBadge, renderModePlaceholder, shouldShowPlaceholder } from "./mode-
 
 const FOCUSABLE_SELECTORS = [".kansidian-list-search"];
 
-export const KANSIDIAN_LIST_VIEW_TYPE = "kansidian-list";
+export const KANSIDIAN_LIST_VIEW_TYPE = "kandyban-list";
 
 interface ListFilters {
 	search: string;
@@ -34,7 +34,7 @@ export class KansidianListView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Kansidian list";
+		return "Kandyban list";
 	}
 
 	getIcon(): string {
@@ -68,7 +68,7 @@ export class KansidianListView extends ItemView {
 			const filtered = this.applyFilters(entries);
 
 			const header = root.createDiv({ cls: "kansidian-list-header" });
-			header.createEl("h2", { text: `Kansidian list (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
+			header.createEl("h2", { text: `Kandyban list (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
 
 			this.renderToolbar(root.createDiv({ cls: "kansidian-list-toolbar" }), entries);
 
