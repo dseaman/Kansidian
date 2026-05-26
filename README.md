@@ -62,8 +62,8 @@ SweetClaude in Claude Code remains the primary working interface — Kandyban is
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub release](https://github.com/dseaman/Kansidian/releases).
 2. Create the plugin folder inside whichever vault you'll use:
-   - Option A (project root as vault): `<your-project>/.obsidian/plugins/kandyban/`
-   - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kandyban/`
+  - Option A (project root as vault): `<your-project>/.obsidian/plugins/kandyban/`
+  - Option B (`.sweetclaude/` as vault): `<your-project>/.sweetclaude/.obsidian/plugins/kandyban/`
 3. Drop the three files into that folder.
 4. In Obsidian, enable Kandyban in **Community plugins**.
 
@@ -295,13 +295,10 @@ Then enable Kandyban in that vault and reload Obsidian (or toggle the plugin off
 
 ## Roadmap
 
-- **Distribution readiness** — community plugin store submission.
 - **Sprint-aware filtering** for agile mode.
 - **Epic / theme classification filters.**
 - **Pitch-board view** for Shape Up projects.
 - **Item creation from Obsidian** — pending a compatibility audit of `/sweetclaude:project-issues new`.
-
-Issue tracking lives in the maintainer's private workspace; expect roadmap items to surface here as releases land.
 
 ## Contributing
 
