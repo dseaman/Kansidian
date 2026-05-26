@@ -54,7 +54,7 @@ SweetClaude in Claude Code remains the primary working interface — Kansidian i
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's Community Plugins.
 2. In BRAT settings → **Add Beta Plugin**, paste `https://github.com/dseaman/Kansidian`.
-3. Enable **Kansidian** in Community Plugins.
+3. Enable **SweetClaude Kanban** in Community Plugins.
 
 ### Manual install
 
