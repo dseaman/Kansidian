@@ -297,6 +297,12 @@ export class KansidianBoardView extends ItemView {
 				cls: "kansidian-board-card-horizon-chip",
 			});
 		}
+		if (item.enums.effort) {
+			meta.createEl("span", {
+				text: item.enums.effort,
+				cls: "kansidian-board-card-effort-chip",
+			});
+		}
 
 		card.addEventListener("dragstart", (event) => {
 			event.dataTransfer?.setData(DRAG_MIME, logicalPath);

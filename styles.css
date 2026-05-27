@@ -249,7 +249,8 @@
 }
 
 .kansidian-board-card-milestone,
-.kansidian-board-card-horizon-chip {
+.kansidian-board-card-horizon-chip,
+.kansidian-board-card-effort-chip {
 	font-size: 10px;
 	padding: 1px 6px;
 	border-radius: 10px;
@@ -257,8 +258,13 @@
 	color: var(--text-muted);
 }
 
-.kansidian-board-card-milestone {
+.kansidian-board-card-milestone,
+.kansidian-board-card-effort-chip {
 	font-family: var(--font-monospace);
+}
+
+.kansidian-board-card-effort-chip {
+	text-transform: uppercase;
 }
 
 @keyframes kansidian-board-card-just-moved {

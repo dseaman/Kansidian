@@ -21,7 +21,14 @@ describe("parseSweetClaudeFile — structure", () => {
 		expect(item!.enums.status).toBe("in-progress");
 		expect(item!.enums.horizon).toBe("next"); // Priority normalises to enums.horizon
 		expect(item!.enums.milestone).toBe("MS-001");
+		expect(item!.enums.effort).toBe("s");
 		expect(item!.enums.dependsOn).toEqual([]);
+	});
+
+	it("leaves enums.effort undefined when no Effort field is present", () => {
+		const item = parseSweetClaudeFile(fixture("BL-042-parenthetical-annotation.md"))!;
+		expect(item.raw["effort"]).toBeUndefined();
+		expect(item.enums.effort).toBeUndefined();
 	});
 
 	it("parses a BL-prefix issue with Horizon convention", () => {

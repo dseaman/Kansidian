@@ -12,6 +12,7 @@ export interface ParsedItem {
 		status?: string;
 		horizon?: string;
 		milestone?: string;
+		effort?: string;
 		dependsOn: string[];
 	};
 }
@@ -107,6 +108,10 @@ export function parseSweetClaudeFile(content: string): ParsedItem | null {
 	if (raw["milestone"] !== undefined) {
 		const c = canonicaliseMilestone(raw["milestone"]);
 		if (c) enums.milestone = c;
+	}
+	if (raw["effort"] !== undefined) {
+		const e = extractEnum(raw["effort"]).toLowerCase();
+		if (e) enums.effort = e;
 	}
 	if (raw["depends_on"] !== undefined) enums.dependsOn = parseDependsOn(raw["depends_on"]);
 
