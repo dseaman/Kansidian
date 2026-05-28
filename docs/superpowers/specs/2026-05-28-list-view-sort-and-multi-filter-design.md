@@ -34,13 +34,13 @@ Two real workflows fall out of reach:
 
 Each of the three filter controls in the toolbar becomes a button. The button label summarises selection state:
 
-- `status: all (4)` — no exclusions (empty selection set, treated as "match anything").
+- `status: all (4)` — no filter applied (default).
 - `status: 3 of 4` — partial selection.
-- `status: none` — empty after the user explicitly unchecked everything (rare; matches nothing, table will be empty).
+- `status: none` — explicitly empty after the user unchecked everything (rare; matches nothing, table will be empty).
 
 Clicking the button opens an absolutely-positioned popover anchored beneath it. The popover contains:
 
-- An "all / none" toggle row at the top. Clicking it selects all or clears the set, depending on current state.
+- An "all" toggle row at the top with a tri-state checkbox: checked when no filter is applied, indeterminate when partially selected, unchecked when explicitly empty.
 - One checkbox row per **observed** value (i.e. values that actually appear in the current entries — same source as today's dropdown). Values are sorted alphabetically.
 - Closes on: outside click, `Escape` key, or losing focus to another popover.
 
@@ -49,15 +49,27 @@ Internal state model — the existing `ListFilters` type changes:
 ```ts
 interface ListFilters {
     search: string;
-    status: Set<string>;
-    horizon: Set<string>;
-    milestone: Set<string>;
+    status: Set<string> | null;
+    horizon: Set<string> | null;
+    milestone: Set<string> | null;
 }
 ```
 
-Filter semantics: **an empty set means "no filter applied" (match everything)**. This matches today's behaviour when the dropdown is on "all" and keeps the initial state trivial. A non-empty set means "match only items whose value is in the set."
+Filter semantics — three distinct states per filter:
 
-Items whose value is `undefined` for a given field always match when the set is empty, and never match when the set is non-empty (consistent with today — there's no checkbox for `undefined`).
+- `null` — no filter applied. Match everything. This is the default and the initial state.
+- A non-empty `Set` — match only items whose value is in the set.
+- An empty `Set` — explicitly empty. Match nothing (filter applied, no values pass).
+
+This three-state model avoids the ambiguity of conflating "no filter" with "every option selected." Normalisation: whenever a per-value toggle leaves all observed values in the set, the state collapses to `null`. The user can never construct a "complete-set" state through the UI — only `null` (all) or a strict subset.
+
+Items whose value is `undefined` for a given field always match when the filter is `null`, and never match when the filter is a `Set` (empty or non-empty) — consistent with today's behaviour, since there's no checkbox for `undefined`.
+
+All-toggle behaviour:
+
+- Click when `null` (checkbox shown checked) → set to empty `Set` (match nothing).
+- Click when partial (checkbox shown indeterminate) → set to `null` (no filter).
+- Click when empty `Set` (checkbox shown unchecked) → set to `null` (no filter).
 
 ### Column sorting — click-to-cycle headers
 
