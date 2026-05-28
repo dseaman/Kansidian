@@ -70,7 +70,65 @@
 }
 
 .kansidian-list-filter {
-	padding: 4px 6px;
+	position: relative;
+}
+
+.kansidian-list-filter-button {
+	padding: 4px 8px;
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: var(--font-ui-small, 13px);
+}
+
+.kansidian-list-filter-button:hover {
+	background: var(--background-modifier-hover);
+}
+
+.kansidian-list-filter-button-active {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+.kansidian-list-filter-popover {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 20;
+	min-width: 160px;
+	max-height: 300px;
+	overflow-y: auto;
+	padding: 4px 0;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kansidian-list-filter-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	cursor: pointer;
+	user-select: none;
+	font-size: var(--font-ui-small, 13px);
+	color: var(--text-normal);
+}
+
+.kansidian-list-filter-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.kansidian-list-filter-all {
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-weight: 600;
+}
+
+.kansidian-list-filter-row input[type="checkbox"] {
+	pointer-events: none;
 }
 
 .kansidian-list-table {

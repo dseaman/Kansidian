@@ -11,11 +11,13 @@ export const KANSIDIAN_LIST_VIEW_TYPE = "kandyban-list";
 
 const SORTABLE_COLUMNS: SortColumn[] = ["id", "title", "status", "horizon", "milestone", "scope"];
 
+type FilterKey = "status" | "horizon" | "milestone";
+
 interface ListFilters {
 	search: string;
-	status: string;
-	horizon: string;
-	milestone: string;
+	status: Set<string> | null;
+	horizon: Set<string> | null;
+	milestone: Set<string> | null;
 }
 
 type EnumField = "Status" | "Horizon" | "Priority";
@@ -28,11 +30,34 @@ function nextSortState(current: SortState | null, column: SortColumn): SortState
 	return null;
 }
 
+function filterButtonLabel(
+	key: string,
+	options: string[],
+	selection: Set<string> | null,
+): string {
+	if (options.length === 0) return `${key}: —`;
+	if (selection === null) return `${key}: all (${options.length})`;
+	if (selection.size === 0) return `${key}: none`;
+	return `${key}: ${selection.size} of ${options.length}`;
+}
+
 export class KansidianListView extends ItemView {
 	private readonly plugin: KansidianPlugin;
 	private unsubscribe?: () => void;
-	private filters: ListFilters = { search: "", status: "", horizon: "", milestone: "" };
+	private filters: ListFilters = {
+		search: "",
+		status: null,
+		horizon: null,
+		milestone: null,
+	};
 	private sort: SortState | null = null;
+	private openPopover: {
+		wrapper: HTMLElement;
+		popover: HTMLElement;
+		key: FilterKey;
+		options: string[];
+		cleanup: () => void;
+	} | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: KansidianPlugin) {
 		super(leaf);
@@ -60,10 +85,16 @@ export class KansidianListView extends ItemView {
 		this.unsubscribe?.();
 	}
 
-	private render(): void {
+	private render(opts?: { preservePopover?: boolean }): void {
+		const preserved =
+			opts?.preservePopover && this.openPopover
+				? { key: this.openPopover.key, options: this.openPopover.options }
+				: null;
+		this.closeOpenPopover();
 		const root = this.containerEl.children[1];
 		if (!root) return;
 		const focusSnapshot = captureFocus(this.containerEl, FOCUSABLE_SELECTORS);
+		let toolbarRendered = false;
 		try {
 			root.empty();
 			root.addClass("kansidian-list-root");
@@ -73,6 +104,7 @@ export class KansidianListView extends ItemView {
 				renderModePlaceholder(root, mode);
 				return;
 			}
+			toolbarRendered = true;
 
 			const entries = this.plugin.index.entries();
 			const filtered = this.applyFilters(entries);
@@ -100,14 +132,20 @@ export class KansidianListView extends ItemView {
 						? "No items in the index yet. Check the configured paths in settings."
 						: "No items match the current filters.",
 				);
-				return;
-			}
-
-			for (const [file, item] of sorted) {
-				this.renderRow(tbody, file, item);
+			} else {
+				for (const [file, item] of sorted) {
+					this.renderRow(tbody, file, item);
+				}
 			}
 		} finally {
 			restoreFocus(this.containerEl, focusSnapshot);
+		}
+
+		if (toolbarRendered && preserved) {
+			const wrapper = root.querySelector(`.kansidian-list-filter-${preserved.key}`);
+			if (wrapper instanceof HTMLElement) {
+				this.toggleFilterPopover(wrapper, preserved.key, preserved.options);
+			}
 		}
 	}
 
@@ -143,15 +181,28 @@ export class KansidianListView extends ItemView {
 		const { search, status, horizon, milestone } = this.filters;
 		const needle = search.trim().toLowerCase();
 		return entries.filter(([, item]) => {
-			if (status && item.enums.status !== status) return false;
-			if (horizon && item.enums.horizon !== horizon) return false;
-			if (milestone && item.enums.milestone !== milestone) return false;
+			if (status !== null) {
+				if (!item.enums.status || !status.has(item.enums.status)) return false;
+			}
+			if (horizon !== null) {
+				if (!item.enums.horizon || !horizon.has(item.enums.horizon)) return false;
+			}
+			if (milestone !== null) {
+				if (!item.enums.milestone || !milestone.has(item.enums.milestone)) return false;
+			}
 			if (needle) {
 				const haystack = `${item.id} ${item.title}`.toLowerCase();
 				if (!haystack.includes(needle)) return false;
 			}
 			return true;
 		});
+	}
+
+	private closeOpenPopover(): void {
+		if (!this.openPopover) return;
+		this.openPopover.cleanup();
+		this.openPopover.popover.remove();
+		this.openPopover = null;
 	}
 
 	private renderToolbar(toolbar: HTMLElement, entries: Entry[]): void {
@@ -190,34 +241,109 @@ export class KansidianListView extends ItemView {
 		const uniqueHorizons = sortedUnique(items.map((i) => i.enums.horizon));
 		const uniqueMilestones = sortedUnique(items.map((i) => i.enums.milestone));
 
-		this.renderFilterSelect(toolbar, "status", uniqueStatuses, this.filters.status, (v) => {
-			this.filters.status = v;
+		this.renderMultiSelectFilter(toolbar, "status", uniqueStatuses);
+		this.renderMultiSelectFilter(toolbar, "horizon", uniqueHorizons);
+		this.renderMultiSelectFilter(toolbar, "milestone", uniqueMilestones);
+	}
+
+	private renderMultiSelectFilter(
+		toolbar: HTMLElement,
+		key: FilterKey,
+		options: string[],
+	): void {
+		const selection = this.filters[key];
+		const wrapper = toolbar.createDiv({
+			cls: `kansidian-list-filter kansidian-list-filter-${key}`,
 		});
-		this.renderFilterSelect(toolbar, "horizon", uniqueHorizons, this.filters.horizon, (v) => {
-			this.filters.horizon = v;
+		const button = wrapper.createEl("button", {
+			cls: "kansidian-list-filter-button",
+			text: filterButtonLabel(key, options, selection),
 		});
-		this.renderFilterSelect(toolbar, "milestone", uniqueMilestones, this.filters.milestone, (v) => {
-			this.filters.milestone = v;
+		if (selection !== null) button.addClass("kansidian-list-filter-button-active");
+		button.addEventListener("click", (event) => {
+			event.stopPropagation();
+			this.toggleFilterPopover(wrapper, key, options);
 		});
 	}
 
-	private renderFilterSelect(
-		parent: HTMLElement,
-		label: string,
+	private toggleFilterPopover(
+		anchor: HTMLElement,
+		key: FilterKey,
 		options: string[],
-		current: string,
-		onChange: (value: string) => void,
 	): void {
-		const select = parent.createEl("select", { cls: `kansidian-list-filter kansidian-list-filter-${label}` });
-		select.createEl("option", { text: `all ${label}`, value: "" });
-		for (const opt of options) {
-			const el = select.createEl("option", { text: opt, value: opt });
-			if (opt === current) el.selected = true;
+		if (this.openPopover?.wrapper === anchor) {
+			this.closeOpenPopover();
+			return;
 		}
-		select.addEventListener("change", () => {
-			onChange(select.value);
-			this.render();
+		this.closeOpenPopover();
+
+		const popover = anchor.createDiv({ cls: "kansidian-list-filter-popover" });
+		const selection = this.filters[key];
+		const allActive = selection === null;
+		const someSelected = selection !== null && selection.size > 0;
+
+		const allRow = popover.createDiv({
+			cls: "kansidian-list-filter-row kansidian-list-filter-all",
 		});
+		const allCheckbox = allRow.createEl("input", { type: "checkbox" });
+		allCheckbox.checked = allActive;
+		allCheckbox.indeterminate = someSelected;
+		allRow.createSpan({ text: `all ${key}` });
+		allRow.addEventListener("click", (event) => {
+			event.stopPropagation();
+			this.filters[key] = allActive ? new Set<string>() : null;
+			this.render({ preservePopover: true });
+		});
+
+		for (const opt of options) {
+			const row = popover.createDiv({ cls: "kansidian-list-filter-row" });
+			const checkbox = row.createEl("input", { type: "checkbox" });
+			checkbox.checked = selection === null || selection.has(opt);
+			row.createSpan({ text: opt });
+			row.addEventListener("click", (event) => {
+				event.stopPropagation();
+				this.toggleFilterValue(key, options, opt);
+			});
+		}
+
+		const onDocumentClick = (event: MouseEvent): void => {
+			if (!(event.target instanceof Node)) return;
+			if (popover.contains(event.target) || anchor.contains(event.target)) return;
+			this.closeOpenPopover();
+		};
+		const onKeyDown = (event: KeyboardEvent): void => {
+			if (event.key === "Escape") this.closeOpenPopover();
+		};
+		document.addEventListener("mousedown", onDocumentClick);
+		document.addEventListener("keydown", onKeyDown);
+
+		this.openPopover = {
+			wrapper: anchor,
+			popover,
+			key,
+			options,
+			cleanup: () => {
+				document.removeEventListener("mousedown", onDocumentClick);
+				document.removeEventListener("keydown", onKeyDown);
+			},
+		};
+	}
+
+	private toggleFilterValue(key: FilterKey, options: string[], opt: string): void {
+		const current = this.filters[key];
+		if (current === null) {
+			const next = new Set(options);
+			next.delete(opt);
+			this.filters[key] = next;
+		} else if (current.has(opt)) {
+			current.delete(opt);
+		} else {
+			current.add(opt);
+			if (current.size === options.length) {
+				this.filters[key] = null;
+			}
+		}
+		this.render({ preservePopover: true });
 	}
 
 	private renderRow(tbody: HTMLElement, logicalPath: string, item: ParsedItem): void {
