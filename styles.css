@@ -94,6 +94,31 @@
 	color: var(--text-muted);
 }
 
+.kansidian-list-th {
+	cursor: pointer;
+	user-select: none;
+}
+
+.kansidian-list-th:hover {
+	color: var(--text-normal);
+}
+
+.kansidian-list-th-active {
+	color: var(--text-normal);
+}
+
+.kansidian-list-th-indicator {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 4px;
+	vertical-align: middle;
+}
+
+.kansidian-list-th-indicator .svg-icon {
+	width: 12px;
+	height: 12px;
+}
+
 .kansidian-list-row:hover {
 	background: var(--background-modifier-hover);
 }

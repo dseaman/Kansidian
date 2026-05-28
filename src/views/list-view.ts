@@ -3,10 +3,13 @@ import type KansidianPlugin from "../main";
 import type { ParsedItem } from "../parser";
 import { captureFocus, restoreFocus } from "./preserve-focus";
 import { modeBadge, renderModePlaceholder, shouldShowPlaceholder } from "./mode-placeholder";
+import { compareItems, type SortColumn, type SortState } from "./list-sort";
 
 const FOCUSABLE_SELECTORS = [".kansidian-list-search"];
 
 export const KANSIDIAN_LIST_VIEW_TYPE = "kandyban-list";
+
+const SORTABLE_COLUMNS: SortColumn[] = ["id", "title", "status", "horizon", "milestone", "scope"];
 
 interface ListFilters {
 	search: string;
@@ -19,10 +22,17 @@ type EnumField = "Status" | "Horizon" | "Priority";
 
 type Entry = [string, ParsedItem]; // [logicalPath, item]
 
+function nextSortState(current: SortState | null, column: SortColumn): SortState | null {
+	if (current?.column !== column) return { column, direction: "asc" };
+	if (current.direction === "asc") return { column, direction: "desc" };
+	return null;
+}
+
 export class KansidianListView extends ItemView {
 	private readonly plugin: KansidianPlugin;
 	private unsubscribe?: () => void;
 	private filters: ListFilters = { search: "", status: "", horizon: "", milestone: "" };
+	private sort: SortState | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: KansidianPlugin) {
 		super(leaf);
@@ -66,6 +76,7 @@ export class KansidianListView extends ItemView {
 
 			const entries = this.plugin.index.entries();
 			const filtered = this.applyFilters(entries);
+			const sorted = this.applySort(filtered);
 
 			const header = root.createDiv({ cls: "kansidian-list-header" });
 			header.createEl("h2", { text: `Kandyban list (${filtered.length} of ${entries.length}) · ${modeBadge(mode)}` });
@@ -75,15 +86,15 @@ export class KansidianListView extends ItemView {
 			const table = root.createEl("table", { cls: "kansidian-list-table" });
 			const thead = table.createEl("thead");
 			const headerRow = thead.createEl("tr");
-			for (const label of ["id", "title", "status", "horizon", "milestone", "scope"]) {
-				headerRow.createEl("th", { text: label });
+			for (const column of SORTABLE_COLUMNS) {
+				this.renderHeaderCell(headerRow, column);
 			}
 
 			const tbody = table.createEl("tbody");
 			if (filtered.length === 0) {
 				const emptyRow = tbody.createEl("tr");
 				const cell = emptyRow.createEl("td");
-				cell.colSpan = 6;
+				cell.colSpan = SORTABLE_COLUMNS.length;
 				cell.setText(
 					entries.length === 0
 						? "No items in the index yet. Check the configured paths in settings."
@@ -92,12 +103,40 @@ export class KansidianListView extends ItemView {
 				return;
 			}
 
-			for (const [file, item] of filtered) {
+			for (const [file, item] of sorted) {
 				this.renderRow(tbody, file, item);
 			}
 		} finally {
 			restoreFocus(this.containerEl, focusSnapshot);
 		}
+	}
+
+	private applySort(entries: Entry[]): Entry[] {
+		if (!this.sort) return entries;
+		const vocab = {
+			status: this.plugin.settings.statusEnums,
+			horizon: this.plugin.settings.horizonEnums,
+		};
+		const sort = this.sort;
+		return [...entries].sort(([, a], [, b]) => compareItems(a, b, sort, vocab));
+	}
+
+	private renderHeaderCell(headerRow: HTMLElement, column: SortColumn): void {
+		const th = headerRow.createEl("th", { cls: "kansidian-list-th" });
+		th.createSpan({ text: column, cls: "kansidian-list-th-label" });
+
+		const indicator = th.createSpan({ cls: "kansidian-list-th-indicator" });
+		if (this.sort?.column === column) {
+			setIcon(indicator, this.sort.direction === "asc" ? "arrow-up" : "arrow-down");
+			th.addClass("kansidian-list-th-active");
+		}
+
+		th.addEventListener("click", () => this.cycleSort(column));
+	}
+
+	private cycleSort(column: SortColumn): void {
+		this.sort = nextSortState(this.sort, column);
+		this.render();
 	}
 
 	private applyFilters(entries: Entry[]): Entry[] {
